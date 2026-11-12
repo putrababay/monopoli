@@ -1,0 +1,2295 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monopoli 3D Sidoarjo - Edisi Desa & Kecamatan</title>
+    <!-- Tailwind CSS untuk UI modern dan responsif -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js untuk grafis 3D Interaktif -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Font Inter & Font Awesome untuk Ikon -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            background-color: #0b1120;
+            user-select: none;
+            color: #f8fafc;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        .ui-layer {
+            position: relative;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .pointer-events-auto {
+            pointer-events: auto;
+        }
+
+        /* ==========================================
+           1. ANIMASI DADU 3D DENGAN CSS PERSPECTIVE
+           ========================================== */
+        .dice-scene {
+            width: 50px;
+            height: 50px;
+            perspective: 350px;
+            display: inline-block;
+        }
+        .dice-cube {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.65s cubic-bezier(0.2, 0.85, 0.35, 1.15);
+        }
+        .dice-face {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(145deg, #ffffff, #f1f5f9);
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.3);
+            display: grid;
+            box-sizing: border-box;
+            padding: 5px;
+        }
+        /* Penempatan 6 Sisi Kubus */
+        .face-1 { transform: rotateY(0deg) translateZ(25px); }
+        .face-2 { transform: rotateX(180deg) translateZ(25px); }
+        .face-3 { transform: rotateY(-90deg) translateZ(25px); }
+        .face-4 { transform: rotateY(90deg) translateZ(25px); }
+        .face-5 { transform: rotateX(-90deg) translateZ(25px); }
+        .face-6 { transform: rotateX(90deg) translateZ(25px); }
+
+        /* Titik (Pips) Dadu */
+        .pip {
+            display: block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #0f172a;
+            justify-self: center;
+            align-self: center;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.6);
+        }
+        .pip-center-red {
+            background: #ef4444 !important;
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Layout Grid Pip 1..6 */
+        .face-1 { display: flex; align-items: center; justify-content: center; }
+        .face-2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+        .face-2 .pip:nth-child(1) { grid-column: 1; grid-row: 1; }
+        .face-2 .pip:nth-child(2) { grid-column: 2; grid-row: 2; }
+        .face-3 { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr 1fr; }
+        .face-3 .pip:nth-child(1) { grid-column: 1; grid-row: 1; }
+        .face-3 .pip:nth-child(2) { grid-column: 2; grid-row: 2; }
+        .face-3 .pip:nth-child(3) { grid-column: 3; grid-row: 3; }
+        .face-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+        .face-5 { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr 1fr; }
+        .face-5 .pip:nth-child(1) { grid-column: 1; grid-row: 1; }
+        .face-5 .pip:nth-child(2) { grid-column: 3; grid-row: 1; }
+        .face-5 .pip:nth-child(3) { grid-column: 2; grid-row: 2; }
+        .face-5 .pip:nth-child(4) { grid-column: 1; grid-row: 3; }
+        .face-5 .pip:nth-child(5) { grid-column: 3; grid-row: 3; }
+        .face-6 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr 1fr; }
+
+        /* Animasi Kocokan Dadu */
+        @keyframes dice-tumble {
+            0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(0.9); }
+            20% { transform: rotateX(240deg) rotateY(180deg) rotateZ(45deg) scale(1.15) translateY(-14px); }
+            40% { transform: rotateX(540deg) rotateY(380deg) rotateZ(120deg) scale(1.2) translateY(-22px); }
+            60% { transform: rotateX(840deg) rotateY(560deg) rotateZ(210deg) scale(1.15) translateY(-12px); }
+            80% { transform: rotateX(1100deg) rotateY(740deg) rotateZ(300deg) scale(1.05) translateY(-4px); }
+            100% { transform: rotateX(1440deg) rotateY(900deg) rotateZ(360deg) scale(1); }
+        }
+        .dice-rolling {
+            animation: dice-tumble 0.45s linear infinite;
+        }
+
+        @keyframes tray-shake {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            20% { transform: translate(-3px, 2px) rotate(-1.5deg); }
+            40% { transform: translate(3px, -2px) rotate(1.5deg); }
+            60% { transform: translate(-2px, -2px) rotate(-1deg); }
+            80% { transform: translate(2px, 2px) rotate(1deg); }
+        }
+        .tray-shaking {
+            animation: tray-shake 0.12s ease-in-out infinite;
+        }
+
+        /* ==========================================
+           2. TAMPILAN UANG KERTAS INDONESIA (RUPIAH)
+           ========================================== */
+        .rupiah-bill {
+            position: relative;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .rupiah-bill:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 18px rgba(0,0,0,0.4);
+        }
+        .bill-100k {
+            background: linear-gradient(135deg, #b91c1c 0%, #e11d48 50%, #991b1b 100%);
+            border-color: #fca5a5;
+        }
+        .bill-50k {
+            background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 50%, #1e40af 100%);
+            border-color: #93c5fd;
+        }
+        .bill-20k {
+            background: linear-gradient(135deg, #15803d 0%, #10b981 50%, #166534 100%);
+            border-color: #86efac;
+        }
+        .bill-10k {
+            background: linear-gradient(135deg, #6b21a8 0%, #9333ea 50%, #581c87 100%);
+            border-color: #d8b4fe;
+        }
+
+        /* Animasi Transaksi Uang Melayang (+/- Rp ...) */
+        @keyframes float-money-up {
+            0% { opacity: 0; transform: translate(-50%, 15px) scale(0.85); }
+            20% { opacity: 1; transform: translate(-50%, -5px) scale(1.1); }
+            80% { opacity: 1; transform: translate(-50%, -40px) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -65px) scale(0.9); }
+        }
+        .floating-money-badge {
+            position: fixed;
+            left: 50%;
+            top: 45%;
+            z-index: 100;
+            pointer-events: none;
+            animation: float-money-up 1.8s ease-out forwards;
+        }
+
+        /* ==========================================
+           3. KARTU KARAKTER & HIGHLIGHT
+           ========================================== */
+        .character-card {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        .character-card:hover {
+            transform: translateY(-3px) scale(1.02);
+        }
+        .character-card.selected {
+            border-color: #f59e0b !important;
+            background: rgba(245, 158, 11, 0.12) !important;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.45);
+        }
+
+        /* Efek Giliran Aktif */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 12px rgba(59, 130, 246, 0.5); }
+            50% { box-shadow: 0 0 24px rgba(59, 130, 246, 0.95); }
+        }
+        .active-turn-card {
+            animation: pulse-glow 2s infinite;
+            border-color: #3b82f6 !important;
+        }
+
+        /* Notifikasi Wilayah Dikuasai Pop-in */
+        @keyframes popup-bounce {
+            0% { transform: scale(0.5); opacity: 0; }
+            60% { transform: scale(1.08); opacity: 1; }
+            80% { transform: scale(0.96); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: popup-bounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); }
+        ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.5); border-radius: 4px; }
+    </style>
+</head>
+<body class="text-slate-100">
+
+    <!-- Container Canvas 3D Three.js -->
+    <div id="canvas-container"></div>
+
+    <!-- Container Transaksi Uang Melayang -->
+    <div id="floating-money-container"></div>
+
+    <!-- ==========================================
+         LOBBY UTAMA & PILIHAN KARAKTER
+         ========================================== -->
+    <div id="lobby-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 overflow-y-auto">
+        <div class="bg-slate-900/95 border border-slate-700/80 rounded-3xl shadow-2xl max-w-2xl w-full p-6 sm:p-8 my-auto">
+            
+            <!-- Header Game -->
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white text-3xl shadow-lg shadow-orange-950/40 mb-3">
+                    <i class="fa-solid fa-gem"></i>
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-black tracking-tight text-white flex items-center justify-center gap-2">
+                    MONOPOLI 3D SIDOARJO
+                </h1>
+                <p class="text-slate-400 text-sm mt-1">Jelajahi Desa & Kecamatan Delta • Dilengkapi Suara & Animasi</p>
+                <div id="server-status-pill" class="inline-flex items-center gap-2 px-3 py-1 mt-2.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span>Game Siap Dimainkan (Lokal / Online)</span>
+                </div>
+            </div>
+
+            <!-- Bagian 1: Nama Pemain & Pilihan Karakter -->
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                        <i class="fa-solid fa-user-pen mr-1 text-amber-400"></i> Nama Pemainmu
+                    </label>
+                    <input type="text" id="player-name-input" placeholder="Cth: Cak Budi / Juragan Delta" maxlength="15"
+                        class="w-full px-4 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition font-semibold">
+                </div>
+
+                <!-- Pemilihan Karakter Khas Sidoarjo -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-xs font-bold uppercase tracking-wider text-slate-300">
+                            <i class="fa-solid fa-users mr-1 text-emerald-400"></i> Pilih Karaktermu:
+                        </label>
+                        <span id="selected-character-name" class="text-xs font-bold text-amber-400">Cak Budi (Sultan Bandeng)</span>
+                    </div>
+
+                    <div id="character-selector-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                        <!-- Kartu-kartu karakter akan di-generate via JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Bagian 2: Mode Permainan (Lokal Cepat / Bot vs Multiplayer Online) -->
+                <div class="pt-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+                        <i class="fa-solid fa-gamepad mr-1 text-blue-400"></i> Pilih Mode Bermain:
+                    </label>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Mode 1: Main Cepat Lokal / Lawan Bot -->
+                        <div class="bg-gradient-to-br from-slate-800 to-slate-850 p-4 rounded-2xl border border-slate-700 hover:border-amber-500/50 transition">
+                            <div class="flex items-center gap-2.5 mb-2">
+                                <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                                    <i class="fa-solid fa-robot"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-white">Main Lokal / Lawan Bot</h4>
+                                    <p class="text-[11px] text-slate-400">Langsung main tanpa internet</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between gap-2 mt-3 mb-3 text-xs">
+                                <span class="text-slate-400">Jumlah Pemain:</span>
+                                <div class="flex gap-1.5" id="bot-count-selector">
+                                    <button data-players="2" class="btn-player-count px-2.5 py-1 rounded-lg bg-slate-700 text-white font-bold text-xs hover:bg-slate-600 transition">2</button>
+                                    <button data-players="3" class="btn-player-count px-2.5 py-1 rounded-lg bg-slate-700 text-white font-bold text-xs hover:bg-slate-600 transition">3</button>
+                                    <button data-players="4" class="btn-player-count px-2.5 py-1 rounded-lg bg-amber-500 text-slate-900 font-bold text-xs transition">4</button>
+                                </div>
+                            </div>
+
+                            <button id="btn-start-local-game" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-black text-sm shadow-lg shadow-orange-900/30 transition transform active:scale-95 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-play"></i> Mulai Main Sekarang
+                            </button>
+                        </div>
+
+                        <!-- Mode 2: Multiplayer Online Room -->
+                        <div class="bg-gradient-to-br from-slate-800 to-slate-850 p-4 rounded-2xl border border-slate-700 hover:border-emerald-500/50 transition flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center gap-2.5 mb-2">
+                                    <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                                        <i class="fa-solid fa-globe"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-white">Multiplayer Online</h4>
+                                        <p class="text-[11px] text-slate-400">Main bareng teman via kode room</p>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2 my-2">
+                                    <input type="text" id="room-code-input" placeholder="KODE" maxlength="6"
+                                        class="w-1/2 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-center font-mono text-xs uppercase tracking-widest text-white focus:outline-none focus:border-emerald-400">
+                                    <button id="btn-join-room" class="w-1/2 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition">
+                                        Gabung
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button id="btn-create-room" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-sm shadow-lg shadow-emerald-900/30 transition transform active:scale-95 flex items-center justify-center gap-2 mt-2">
+                                <i class="fa-solid fa-plus-circle"></i> Buat Room Baru
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer & Info Audio -->
+            <div class="mt-5 pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+                <span id="display-userid"><i class="fa-solid fa-id-badge mr-1"></i> ID: Tamu Lokal</span>
+                <span class="text-emerald-400 flex items-center gap-1.5"><i class="fa-solid fa-volume-high"></i> Audio Sound Effect Aktif</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         LAYAR RUANG TUNGGU (WAITING ROOM ONLINE)
+         ========================================== -->
+    <div id="waiting-room-screen" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <span class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Ruang Tunggu Room</span>
+                    <h2 class="text-2xl font-black text-white">Kode: <span id="waiting-room-code" class="font-mono text-amber-400 select-all">------</span></h2>
+                </div>
+                <button id="btn-copy-code" class="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition" title="Salin Kode Room">
+                    <i class="fa-solid fa-copy"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-3">Bagikan kode ini ke temanmu untuk bergabung bermain (Maks. 4 Pemain):</p>
+            <div id="waiting-players-list" class="space-y-2 mb-6"></div>
+
+            <div class="flex gap-3">
+                <button id="btn-leave-room" class="w-1/3 py-3 rounded-xl bg-slate-800 hover:bg-rose-600/80 text-white font-bold transition">
+                    Keluar
+                </button>
+                <button id="btn-start-game" class="w-2/3 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-black shadow-lg transition">
+                    Mulai Permainan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         HUD UTAMA GAMEPLAY
+         ========================================== -->
+    <div id="game-hud" class="hidden ui-layer fixed inset-0 flex flex-col justify-between p-3 sm:p-5">
+        
+        <!-- Bagian Atas: Daftar Pemain, Uang Tersimpan & Tombol Kontrol -->
+        <div class="flex flex-col sm:flex-row justify-between items-start gap-3">
+            
+            <!-- Kartu Pemain di Sisi Kiri Atas -->
+            <div id="players-hud" class="flex flex-wrap gap-2 pointer-events-auto max-w-full">
+                <!-- Di-render dinamis -->
+            </div>
+
+            <!-- Kontrol Kanan Atas: Saldo Dompet Indonesia, Audio & Reset Kamera -->
+            <div class="flex items-center gap-2 pointer-events-auto self-end sm:self-start">
+                
+                <!-- Tombol Brankas / Dompet Uang Indonesia -->
+                <button id="btn-open-wallet" class="bg-gradient-to-r from-red-700 via-rose-600 to-red-800 hover:from-red-600 hover:to-rose-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-red-950/40 border border-red-400/40 transition transform active:scale-95" title="Buka Brankas Uang Indonesia">
+                    <div class="w-5 h-5 rounded-md bg-white/20 flex items-center justify-center text-amber-300">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                    <div>
+                        <div class="text-[9px] uppercase tracking-wider text-rose-200">Uang Tersimpan</div>
+                        <div id="hud-my-balance" class="font-mono font-black text-amber-300">Rp 15.000.000</div>
+                    </div>
+                </button>
+
+                <!-- Tombol Suara (Mute / Unmute) -->
+                <button id="btn-toggle-sound" class="p-2.5 rounded-xl bg-slate-900/85 hover:bg-slate-800 backdrop-blur-md border border-slate-700 text-amber-400 transition" title="Suara / Efek Audio">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-base"></i>
+                </button>
+
+                <!-- Status Room / Mode -->
+                <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700 px-3 py-2 rounded-xl text-xs font-mono flex items-center gap-1.5">
+                    <span class="text-slate-400">MODE:</span>
+                    <span id="hud-room-code" class="font-bold text-amber-400">LOKAL</span>
+                </div>
+
+                <!-- Reset Kamera 3D -->
+                <button id="btn-reset-cam" class="p-2.5 rounded-xl bg-slate-900/85 hover:bg-slate-800 backdrop-blur-md border border-slate-700 text-slate-200 transition" title="Reset Pandangan Kamera">
+                    <i class="fa-solid fa-video"></i>
+                </button>
+
+                <!-- Buka Log di HP -->
+                <button id="btn-toggle-log" class="p-2.5 rounded-xl bg-slate-900/85 hover:bg-slate-800 backdrop-blur-md border border-slate-700 text-slate-200 transition sm:hidden" title="Kabar Sidoarjo">
+                    <i class="fa-solid fa-list-ul"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Bagian Tengah Kanan: Log Aktivitas Permainan -->
+        <div id="log-panel" class="hidden sm:flex flex-col w-72 max-h-60 bg-slate-900/85 backdrop-blur-md border border-slate-700/80 rounded-2xl p-3 pointer-events-auto self-end my-auto shadow-2xl">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center justify-between">
+                <span class="flex items-center gap-1.5 text-emerald-400"><i class="fa-solid fa-newspaper"></i> Warta Sidoarjo</span>
+                <span class="text-[10px] text-slate-500 font-normal">Real-Time</span>
+            </div>
+            <div id="game-logs" class="flex-1 overflow-y-auto space-y-1.5 text-xs pr-1">
+                <!-- Log masuk di sini -->
+            </div>
+        </div>
+
+        <!-- Bagian Tengah Atas: Banner Notifikasi Wilayah / Sewa -->
+        <div id="event-banner" class="hidden self-center pointer-events-auto bg-slate-900/95 border-2 border-amber-400/80 rounded-2xl p-4 shadow-2xl text-center max-w-sm animate-pop">
+            <div id="event-icon" class="text-3xl mb-1 text-amber-400"><i class="fa-solid fa-flag"></i></div>
+            <h4 id="event-title" class="text-base font-black text-white">WILAYAH DIKUASAI!</h4>
+            <p id="event-desc" class="text-xs text-slate-300 mt-1">Deskripsi acara</p>
+        </div>
+
+        <!-- Bagian Bawah: Kontrol Giliran & Aksi Kocok Dadu 3D -->
+        <div class="flex flex-col items-center gap-3 pointer-events-auto mb-2">
+            
+            <!-- Banner Giliran Aktif -->
+            <div id="turn-banner" class="bg-slate-900/95 backdrop-blur-md border border-slate-700/90 px-6 py-2.5 rounded-full text-sm font-bold shadow-2xl flex items-center gap-2.5">
+                <span class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></span>
+                <span id="turn-text" class="text-white">Memuat giliran...</span>
+            </div>
+
+            <!-- Panel Dadu 3D & Tombol Aksi -->
+            <div class="bg-slate-900/90 backdrop-blur-md border border-slate-700/90 p-3 sm:p-4 rounded-3xl shadow-2xl flex items-center gap-4">
+                
+                <!-- Baki Dadu 3D CSS -->
+                <div id="dice-tray" class="flex items-center gap-3 bg-slate-950/70 p-2.5 rounded-2xl border border-slate-800 shadow-inner">
+                    <!-- Dadu 1 -->
+                    <div class="dice-scene">
+                        <div id="cube-1" class="dice-cube">
+                            <div class="dice-face face-1"><span class="pip pip-center-red"></span></div>
+                            <div class="dice-face face-2"><span class="pip"></span><span class="pip"></span></div>
+                            <div class="dice-face face-3"><span class="pip"></span><span class="pip"></span></div>
+                            <div class="dice-face face-4"><span class="pip"></span><span class="pip"></span></div>
+                            <div class="dice-face face-5"><span class="pip"></span><span class="pip"></span><span class="pip pip-center-red"></span><span class="pip"></span><span class="pip"></span></div>
+                            <div class="dice-face face-6"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+                        </div>
+                    </div>
+
+                    <!-- Dadu 2 -->
+                    <div class="dice-scene">
+                        <div id="cube-2" class="dice-cube">
+                            <div class="dice-face face-1"><span class="pip pip-center-red"></span></div>
+                            <div class="dice-face face-2"><span class="pip"></span><span class="pip"></span></div>
+                            <div class="dice-face face-3"><span class="pip"></span><span class="pip"></span></div>
+                            <div class="dice-face face-4"><span class="pip"></span><span class="pip"></span></div>
+                            <div class="dice-face face-5"><span class="pip"></span><span class="pip"></span><span class="pip pip-center-red"></span><span class="pip"></span><span class="pip"></span></div>
+                            <div class="dice-face face-6"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tombol Kocok Dadu -->
+                <button id="btn-roll-dice" disabled class="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed text-white font-black tracking-wider shadow-xl shadow-emerald-950/40 transition transform active:scale-95 flex items-center gap-2.5 text-base">
+                    <i class="fa-solid fa-dice text-xl"></i> KOCOK DADU
+                </button>
+
+                <!-- Tombol Akhiri Giliran -->
+                <button id="btn-end-turn" class="hidden px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-black tracking-wide shadow-xl transition transform active:scale-95 flex items-center gap-2">
+                    Selesai <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MODAL BRANKAS & DOMPET KAS INDONESIA
+         ========================================== -->
+    <div id="wallet-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all animate-pop">
+            
+            <!-- Header Dompet -->
+            <div class="bg-gradient-to-r from-red-700 via-rose-600 to-red-800 p-5 text-white flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-money-bill-wave"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black">DOMPET & BRANKAS KAS INDONESIA</h3>
+                        <p class="text-xs text-rose-200">Rincian Simpanan Rupiah & Aset Wilayah Sidoarjo</p>
+                    </div>
+                </div>
+                <button id="btn-close-wallet" class="w-8 h-8 rounded-lg bg-black/20 hover:bg-black/40 flex items-center justify-center text-white transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+                <!-- Saldo Kas Tersimpan -->
+                <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+                    <div>
+                        <span class="text-xs uppercase font-bold text-slate-400">Total Uang Tunai Tersimpan</span>
+                        <div id="wallet-total-cash" class="text-2xl font-black text-emerald-400 font-mono mt-0.5">Rp 15.000.000</div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs uppercase font-bold text-slate-400">Total Kekayaan Bersih</span>
+                        <div id="wallet-net-worth" class="text-base font-bold text-amber-400 font-mono mt-0.5">Rp 15.000.000</div>
+                    </div>
+                </div>
+
+                <!-- Desain Uang Kertas Rupiah Indonesia -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-1.5">
+                        <i class="fa-solid fa-money-bill-1-wave text-amber-400"></i> Pecahan Uang Kertas Bank Indonesia
+                    </h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <!-- Rp 100.000 -->
+                        <div class="rupiah-bill bill-100k">
+                            <div>
+                                <div class="text-[10px] text-red-200 font-semibold tracking-widest">BANK INDONESIA</div>
+                                <div class="text-lg font-black text-white font-mono leading-none my-1">100.000</div>
+                                <div class="text-[9px] text-red-100">Dr. (H.C.) Ir. Soekarno & Mohammad Hatta</div>
+                            </div>
+                            <div class="text-right">
+                                <span id="bill-count-100k" class="text-xs bg-black/30 px-2 py-0.5 rounded font-mono font-bold">120 Lembar</span>
+                            </div>
+                        </div>
+
+                        <!-- Rp 50.000 -->
+                        <div class="rupiah-bill bill-50k">
+                            <div>
+                                <div class="text-[10px] text-sky-200 font-semibold tracking-widest">BANK INDONESIA</div>
+                                <div class="text-lg font-black text-white font-mono leading-none my-1">50.000</div>
+                                <div class="text-[9px] text-sky-100">Ir. H. Djuanda Kartawidjaja</div>
+                            </div>
+                            <div class="text-right">
+                                <span id="bill-count-50k" class="text-xs bg-black/30 px-2 py-0.5 rounded font-mono font-bold">50 Lembar</span>
+                            </div>
+                        </div>
+
+                        <!-- Rp 20.000 -->
+                        <div class="rupiah-bill bill-20k">
+                            <div>
+                                <div class="text-[10px] text-green-200 font-semibold tracking-widest">BANK INDONESIA</div>
+                                <div class="text-lg font-black text-white font-mono leading-none my-1">20.000</div>
+                                <div class="text-[9px] text-green-100">Dr. G.S.S.J. Ratulangi</div>
+                            </div>
+                            <div class="text-right">
+                                <span id="bill-count-20k" class="text-xs bg-black/30 px-2 py-0.5 rounded font-mono font-bold">25 Lembar</span>
+                            </div>
+                        </div>
+
+                        <!-- Rp 10.000 -->
+                        <div class="rupiah-bill bill-10k">
+                            <div>
+                                <div class="text-[10px] text-purple-200 font-semibold tracking-widest">BANK INDONESIA</div>
+                                <div class="text-lg font-black text-white font-mono leading-none my-1">10.000</div>
+                                <div class="text-[9px] text-purple-100">Frans Kaisiepo</div>
+                            </div>
+                            <div class="text-right">
+                                <span id="bill-count-10k" class="text-xs bg-black/30 px-2 py-0.5 rounded font-mono font-bold">0 Lembar</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Daftar Sertifikat Wilayah / Desa Yang Dikuasai -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center justify-between">
+                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-scroll text-emerald-400"></i> Sertifikat Wilayah Dikuasai</span>
+                        <span id="wallet-properties-count" class="text-amber-400 font-bold">0 Desa</span>
+                    </h4>
+                    <div id="wallet-properties-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        <div class="text-center py-5 text-slate-500 text-xs italic">
+                            Belum memiliki wilayah. Jelajahi Sidoarjo dan beli properti untuk mendapat uang sewa!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MODAL PEMBELIAN & AKSI PETAK
+         ========================================== -->
+    <div id="action-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden transform transition-all animate-pop">
+            <div id="modal-header-color" class="h-4 w-full bg-emerald-500"></div>
+            
+            <div class="p-6 text-center">
+                <span id="modal-tile-type" class="text-[11px] font-bold uppercase tracking-widest text-slate-400">KECAMATAN / DESA</span>
+                <h3 id="modal-tile-name" class="text-2xl font-black text-white mt-1">Nama Wilayah</h3>
+                <p id="modal-tile-desc" class="text-sm text-slate-300 mt-2 leading-relaxed">Deskripsi wilayah.</p>
+                
+                <div id="modal-price-box" class="mt-4 bg-slate-950/80 rounded-2xl p-3 border border-slate-800 flex justify-around">
+                    <div>
+                        <div class="text-[10px] text-slate-400 uppercase">Harga Beli</div>
+                        <div id="modal-buy-price" class="text-base font-bold text-emerald-400 font-mono">Rp 0</div>
+                    </div>
+                    <div class="border-l border-slate-800"></div>
+                    <div>
+                        <div class="text-[10px] text-slate-400 uppercase">Biaya Retribusi/Sewa</div>
+                        <div id="modal-rent-price" class="text-base font-bold text-amber-400 font-mono">Rp 0</div>
+                    </div>
+                </div>
+
+                <!-- Tombol Beli / Skip -->
+                <div id="modal-buttons" class="mt-6 flex gap-3">
+                    <button id="btn-modal-skip" class="w-1/2 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold transition">
+                        Lewati
+                    </button>
+                    <button id="btn-modal-buy" class="w-1/2 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold shadow-lg transition">
+                        Beli Wilayah
+                    </button>
+                </div>
+                <button id="btn-modal-ok" class="hidden w-full mt-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg transition">
+                    Mengerti
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- ==========================================
+         SCRIPT UTAMA PERMAINAN
+         ========================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ==========================================
+        // 1. SOUND FX ENGINE (WEB AUDIO API PROCEDURAL)
+        // ==========================================
+        class SoundFXEngine {
+            constructor() {
+                this.ctx = null;
+                this.muted = localStorage.getItem('monopoli_sidoarjo_muted') === 'true';
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) {
+                        this.ctx = new AudioContext();
+                    }
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            toggleMute() {
+                this.muted = !this.muted;
+                localStorage.setItem('monopoli_sidoarjo_muted', this.muted);
+                return this.muted;
+            }
+
+            // Suara Klik UI
+            playClick() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.04);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.04);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            }
+
+            // Suara Kocokan Dadu (Rattle Noise + Percussive Clicks)
+            playDiceRoll() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                // Multiple rapid rattling hits
+                for (let i = 0; i < 7; i++) {
+                    const hitTime = now + i * 0.09 + Math.random() * 0.03;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = "triangle";
+                    osc.frequency.setValueAtTime(180 + Math.random() * 140, hitTime);
+                    osc.frequency.exponentialRampToValueAtTime(60, hitTime + 0.05);
+                    gain.gain.setValueAtTime(0.25, hitTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, hitTime + 0.05);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(hitTime);
+                    osc.stop(hitTime + 0.06);
+                }
+            }
+
+            // Suara Dadu Mendarat di Meja
+            playDiceLand() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(140, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.12);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.12);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.13);
+            }
+
+            // Suara Pemain Melangkah 1 Petak / Desa (Hop & Pop)
+            playStep(stepIndex = 1) {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const baseFreq = 480;
+                // Nada sedikit naik di setiap langkah agar ceria
+                const freq = baseFreq * (1 + ((stepIndex - 1) % 10) * 0.06);
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(freq, now);
+                osc.frequency.exponentialRampToValueAtTime(freq * 0.7, now + 0.08);
+
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.09);
+            }
+
+            // Suara Fanfare Ketika Wilayah Resmi Dikuasai / Dibeli
+            playOccupy() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                // Fanfare Arpeggio: C5 (523), E5 (659), G5 (784), C6 (1046)
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const noteTime = now + idx * 0.11;
+                    const dur = idx === notes.length - 1 ? 0.45 : 0.15;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = "triangle";
+                    osc.frequency.setValueAtTime(freq, noteTime);
+
+                    gain.gain.setValueAtTime(0.3, noteTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, noteTime + dur);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(noteTime);
+                    osc.stop(noteTime + dur + 0.02);
+                });
+            }
+
+            // Suara Bayar Sewa / Retribusi Wilayah (Cha-ching & Koin)
+            playRent() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                // Koin 1 & 2
+                [1760, 2637].forEach((freq, idx) => {
+                    const hit = now + idx * 0.08;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(freq, hit);
+                    gain.gain.setValueAtTime(0.25, hit);
+                    gain.gain.exponentialRampToValueAtTime(0.001, hit + 0.22);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(hit);
+                    osc.stop(hit + 0.23);
+                });
+            }
+
+            // Suara Bonus Uang Lewat Alun-Alun Sidoarjo (Sparkling Arpeggio)
+            playBonusMoney() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const notes = [587.33, 739.99, 880, 1174.66, 1479.98];
+                notes.forEach((freq, idx) => {
+                    const hit = now + idx * 0.08;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(freq, hit);
+                    gain.gain.setValueAtTime(0.22, hit);
+                    gain.gain.exponentialRampToValueAtTime(0.001, hit + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(hit);
+                    osc.stop(hit + 0.26);
+                });
+            }
+
+            // Suara Denda / Pajak / Bundaran Waru Macet
+            playPenalty() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = "sawtooth";
+                osc.frequency.setValueAtTime(260, now);
+                osc.frequency.exponentialRampToValueAtTime(110, now + 0.35);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.35);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.36);
+            }
+        }
+
+        const sound = new SoundFXEngine();
+
+        // ==========================================
+        // 2. PILIHAN KARAKTER KHAS SIDOARJO
+        // ==========================================
+        const CHARACTERS = [
+            {
+                id: "cak_budi",
+                name: "Cak Budi",
+                title: "Sultan Bandeng Delta",
+                avatar: "👑",
+                quote: "Wani borong kabeh sak tambak-tambake!",
+                color: { name: "Emas", hex: "#f59e0b", int: 0xf59e0b },
+                topper: "crown", // 3D Topper Mahkota
+                bio: "Juragan tambak bandeng dan udang sukses di Porong & Candi. Modalnya tebal dan gemar investasi properti."
+            },
+            {
+                id: "pak_lurah",
+                name: "Pak Lurah",
+                title: "Pamomong Desa Bijak",
+                avatar: "🇮🇩",
+                quote: "Mbangun desa, noto projo kang raharjo!",
+                color: { name: "Biru", hex: "#2563eb", int: 0x2563eb },
+                topper: "peci", // 3D Topper Peci Hitam
+                bio: "Tokoh masyarakat berwibawa dari Alun-Alun Sidoarjo. Cermat mengelola kas desa dan taat retribusi."
+            },
+            {
+                id: "mbak_maya",
+                name: "Mbak Maya",
+                title: "Ratu Kerupuk Sidoarjo",
+                avatar: "🦐",
+                quote: "Renyah untunge, gurih rejekine!",
+                color: { name: "Pink", hex: "#ec4899", int: 0xec4899 },
+                topper: "gem", // 3D Topper Kristal Permata
+                bio: "Pengusaha muda kreatif pelopor aneka kerupuk udang legendaris. Lincah bermanuver dan jeli melihat peluang."
+            },
+            {
+                id: "mas_bayu",
+                name: "Mas Bayu",
+                title: "Pendekar Waru",
+                avatar: "🥋",
+                quote: "Pantang mundur sakdurunge sugih!",
+                color: { name: "Merah", hex: "#ef4444", int: 0xef4444 },
+                topper: "warrior", // 3D Topper Ikat Kepala Jawara
+                bio: "Pemuda tangguh dari Waru yang tak pernah gentar hadapi macet Bundaran. Berani ambil risiko tinggi."
+            },
+            {
+                id: "pak_haji",
+                name: "Pak Haji",
+                title: "Saudagar Kulit Tanggulangin",
+                avatar: "👳",
+                quote: "Kualitas kulit nomor satu, transaksi berkah!",
+                color: { name: "Hijau", hex: "#10b981", int: 0x10b981 },
+                topper: "turban", // 3D Topper Peci/Sorban Putih
+                bio: "Eksportir kerajinan kulit Tanggulangin. Jaringannya luas dari Stasiun Sidoarjo hingga Bandara Juanda."
+            },
+            {
+                id: "ning_ayu",
+                name: "Ning Ayu",
+                title: "Influencer Hits Delta",
+                avatar: "📱",
+                quote: "Review jujur, cuan meluncur!",
+                color: { name: "Ungu", hex: "#8b5cf6", int: 0x8b5cf6 },
+                topper: "star", // 3D Topper Bintang Emas
+                bio: "Konten kreator viral pelopor wisata kuliner Sidoarjo. Jago negosiasi dan selalu ceria."
+            }
+        ];
+
+        let selectedCharacterId = "cak_budi";
+
+        // ==========================================
+        // 3. DATA WILAYAH KABUPATEN SIDOARJO (24 PETAK)
+        // ==========================================
+        const BOARD_TILES = [
+            { id: 0, name: "ALUN-ALUN SIDOARJO", sub: "START", type: "start", color: "#10b981", price: 0, rent: 0, desc: "Titik awal perjalanan! Lewati petak ini untuk mendapat bonus Rp 2.000.000 dari Pemkab." },
+            { id: 1, name: "DESA KEDUNGPELUK", sub: "Kec. Candi", type: "property", group: "coklat", color: "#92400e", price: 600000, rent: 60000 },
+            { id: 2, name: "DESA BLURU KIDUL", sub: "Kec. Sidoarjo", type: "property", group: "coklat", color: "#92400e", price: 800000, rent: 80000 },
+            { id: 3, name: "DANA UMUM DELTA", sub: "Bantuan Sosial", type: "chance", color: "#3b82f6", price: 0, rent: 0, desc: "Ambil kartu keberuntungan warga Sidoarjo!" },
+            { id: 4, name: "STASIUN SIDOARJO", sub: "Transportasi", type: "station", color: "#475569", price: 1500000, rent: 250000 },
+            { id: 5, name: "DESA PORONG", sub: "Kec. Porong", type: "property", group: "biru_muda", color: "#0ea5e9", price: 1000000, rent: 100000 },
+            
+            { id: 6, name: "LUMPUR LAPINDO", sub: "Zona Tanggul", type: "jail", color: "#f97316", price: 0, rent: 0, desc: "Hanya lewat memantau tanggul lumpur Porong. Aman!" },
+            { id: 7, name: "DESA TANGGULANGIN", sub: "Sentra Tas & Kulit", type: "property", group: "biru_muda", color: "#0ea5e9", price: 1200000, rent: 120000 },
+            { id: 8, name: "DESA KEDENSARI", sub: "Kec. Tanggulangin", type: "property", group: "biru_muda", color: "#0ea5e9", price: 1200000, rent: 130000 },
+            { id: 9, name: "PAJAK TAMBAK", sub: "Retribusi Bandeng", type: "tax", color: "#ef4444", price: 0, rent: 1000000, desc: "Bayar retribusi hasil tambak bandeng & udang sebesar Rp 1.000.000." },
+            { id: 10, name: "DESA KRIAN", sub: "Kec. Krian", type: "property", group: "pink", color: "#ec4899", price: 1400000, rent: 150000 },
+            { id: 11, name: "DESA BARENGKRAJAN", sub: "Kec. Krian", type: "property", group: "pink", color: "#ec4899", price: 1600000, rent: 170000 },
+
+            { id: 12, name: "GOR DELTA SIDOARJO", sub: "Parkir Bebas", type: "free", color: "#eab308", price: 0, rent: 0, desc: "Istirahat sejenak menikmati kuliner kupang lontong di kawasan GOR Delta." },
+            { id: 13, name: "DESA SEPANJANG", sub: "Kec. Taman", type: "property", group: "oranye", color: "#f97316", price: 1800000, rent: 200000 },
+            { id: 14, name: "DESA GELURAN", sub: "Kec. Taman", type: "property", group: "oranye", color: "#f97316", price: 2000000, rent: 220000 },
+            { id: 15, name: "KESEMPATAN", sub: "Warta Delta", type: "chance", color: "#8b5cf6", price: 0, rent: 0, desc: "Kejutan tak terduga dari Kabupaten Sidoarjo!" },
+            { id: 16, name: "BANDARA JUANDA", sub: "Kec. Sedati", type: "station", color: "#475569", price: 2200000, rent: 350000 },
+            { id: 17, name: "DESA BETRO", sub: "Kec. Sedati", type: "property", group: "merah", color: "#ef4444", price: 2400000, rent: 260000 },
+
+            { id: 18, name: "MACET BUNDARAN WARU", sub: "Terjebak Macet!", type: "gotojail", color: "#dc2626", price: 0, rent: 0, desc: "Terjebak macet parah di Bundaran Waru! Mundur ke Tanggul Lumpur Porong & denda Rp 500.000." },
+            { id: 19, name: "DESA PEPELEGI", sub: "Kec. Waru", type: "property", group: "merah", color: "#ef4444", price: 2600000, rent: 280000 },
+            { id: 20, name: "DESA WADUNGASRI", sub: "Kec. Waru", type: "property", group: "hijau", color: "#16a34a", price: 2800000, rent: 300000 },
+            { id: 21, name: "DESA GEDANGAN", sub: "Kec. Gedangan", type: "property", group: "hijau", color: "#16a34a", price: 3000000, rent: 330000 },
+            { id: 22, name: "DESA BUDURAN", sub: "Kec. Buduran", type: "property", group: "biru_tua", color: "#2563eb", price: 3500000, rent: 400000 },
+            { id: 23, name: "KOTA SIDOARJO", sub: "Pusat Kabupaten", type: "property", group: "biru_tua", color: "#2563eb", price: 4000000, rent: 500000 }
+        ];
+
+        const CHANCE_CARDS = [
+            { text: "Panen Bandeng Asap melimpah ruah! Terima bonus Rp 1.500.000.", money: 1500000 },
+            { text: "Juara Lomba Masak Kupang Lontong Sidoarjo! Terima Rp 1.000.000.", money: 1000000 },
+            { text: "Gotong royong perbaikan jalan desa di wilayahmu. Bayar Rp 600.000.", money: -600000 },
+            { text: "Bantuan UMKM Kerajinan Kulit Tanggulangin cair! Terima Rp 1.200.000.", money: 1200000 },
+            { text: "Kena razia helm & surat di Alun-Alun Sidoarjo. Bayar denda Rp 500.000.", money: -500000 }
+        ];
+
+        // Format Rupiah Indonesia
+        const formatRp = (num) => "Rp " + Math.max(0, num).toLocaleString("id-ID");
+
+        // ==========================================
+        // 4. FIREBASE / LOCAL GAME STATE ENGINE
+        // ==========================================
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'monopoli-sidoarjo-3d';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        
+        let app = null, auth = null, db = null;
+        let currentUser = { uid: "user_local_" + Math.random().toString(36).substring(2, 7) };
+        let currentRoomCode = null;
+        let unsubscribeRoom = null;
+        let gameState = null;
+        let isLocalMode = true; // Default local mode agar langsung bisa dicoba di Laragon
+        let isRolling = false;
+        let isPawnMoving = false;
+        let localPlayerCount = 4;
+
+        // Tampilkan Toast Notifikasi
+        function showToast(msg, type = "info") {
+            const container = document.getElementById("toast-container");
+            const el = document.createElement("div");
+            const bg = type === "error" ? "bg-rose-600" : type === "success" ? "bg-emerald-600" : "bg-slate-900 border border-slate-700";
+            el.className = `${bg} text-white px-4 py-2.5 rounded-xl shadow-2xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition-all duration-300 transform translate-y-0 opacity-100 z-50`;
+            el.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : type === 'success' ? 'fa-circle-check text-emerald-300' : 'fa-circle-info text-blue-300'}"></i> <span>${msg}</span>`;
+            container.appendChild(el);
+            setTimeout(() => {
+                el.classList.add("opacity-0", "-translate-y-2");
+                setTimeout(() => el.remove(), 300);
+            }, 3000);
+        }
+
+        // Tampilkan Notifikasi Uang Melayang
+        function showFloatingMoney(amountText, isPositive = true) {
+            const container = document.getElementById("floating-money-container");
+            const el = document.createElement("div");
+            const color = isPositive ? "bg-emerald-600 border-emerald-400 text-white" : "bg-rose-600 border-rose-400 text-white";
+            const icon = isPositive ? "fa-money-bill-trend-up" : "fa-receipt";
+            el.className = `floating-money-badge ${color} border px-4 py-2 rounded-2xl shadow-2xl font-mono font-black text-base sm:text-lg flex items-center gap-2`;
+            el.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${amountText}</span>`;
+            container.appendChild(el);
+            setTimeout(() => el.remove(), 1900);
+        }
+
+        // Tampilkan Banner Acara di Tengah Layar
+        function showEventBanner(title, desc, icon = "fa-flag", duration = 2500) {
+            const banner = document.getElementById("event-banner");
+            document.getElementById("event-title").innerText = title;
+            document.getElementById("event-desc").innerText = desc;
+            document.getElementById("event-icon").innerHTML = `<i class="fa-solid ${icon}"></i>`;
+            banner.classList.remove("hidden");
+            setTimeout(() => {
+                banner.classList.add("hidden");
+            }, duration);
+        }
+
+        // Inisialisasi Firebase (jika tersedia)
+        async function initFirebase() {
+            if (!firebaseConfig) {
+                document.getElementById("display-userid").innerText = `Mode Lokal Aktif (${currentUser.uid})`;
+                return;
+            }
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUser = user;
+                        document.getElementById("display-userid").innerText = `ID Online: ${user.uid.substring(0, 8)}...`;
+                        document.getElementById("server-status-pill").innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span><span>Online Server Sidoarjo Terhubung</span>`;
+                    }
+                });
+            } catch (err) {
+                console.warn("Firebase tidak aktif, menggunakan engine lokal:", err);
+            }
+        }
+
+        // Render Pilihan Karakter di Lobby
+        function renderCharacterSelector() {
+            const grid = document.getElementById("character-selector-grid");
+            grid.innerHTML = "";
+
+            CHARACTERS.forEach(char => {
+                const isSelected = char.id === selectedCharacterId;
+                const card = document.createElement("div");
+                card.className = `character-card bg-slate-800/80 border ${isSelected ? 'selected' : 'border-slate-700/80'} p-2.5 rounded-2xl flex flex-col justify-between`;
+                card.onclick = () => {
+                    selectedCharacterId = char.id;
+                    document.getElementById("selected-character-name").innerText = `${char.name} (${char.title})`;
+                    sound.playClick();
+                    renderCharacterSelector();
+                };
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <span class="text-2xl">${char.avatar}</span>
+                        <div>
+                            <div class="text-xs font-bold text-white leading-tight">${char.name}</div>
+                            <div class="text-[10px] text-slate-400 leading-tight">${char.title}</div>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-amber-300/90 italic line-clamp-1 mb-1.5">"${char.quote}"</p>
+                    <div class="flex items-center justify-between text-[10px] pt-1 border-t border-slate-700/60">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full" style="background-color: ${char.color.hex}"></span>
+                        <span class="text-slate-400 capitalize">Pion ${char.color.name}</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Mulai Game Lokal (Solo vs Bot / Pass & Play)
+        function startLocalGame() {
+            sound.playClick();
+            isLocalMode = true;
+            const inputName = document.getElementById("player-name-input").value.trim();
+            const charObj = CHARACTERS.find(c => c.id === selectedCharacterId) || CHARACTERS[0];
+            const playerName = inputName || charObj.name;
+
+            // Roster Pemain: 1 Pemain Utama + Sisanya Bot Cerdas
+            const players = [
+                {
+                    uid: currentUser.uid,
+                    name: playerName,
+                    characterId: charObj.id,
+                    avatar: charObj.avatar,
+                    title: charObj.title,
+                    colorHex: charObj.color.hex,
+                    colorInt: charObj.color.int,
+                    money: 15000000,
+                    position: 0,
+                    bankrupt: false,
+                    isBot: false
+                }
+            ];
+
+            // Tambahkan Bot dari karakter yang belum terpilih
+            const remainingChars = CHARACTERS.filter(c => c.id !== charObj.id);
+            for (let i = 1; i < localPlayerCount; i++) {
+                const botChar = remainingChars[i - 1] || CHARACTERS[i];
+                players.push({
+                    uid: "bot_" + botChar.id,
+                    name: botChar.name + " (Bot)",
+                    characterId: botChar.id,
+                    avatar: botChar.avatar,
+                    title: botChar.title,
+                    colorHex: botChar.color.hex,
+                    colorInt: botChar.color.int,
+                    money: 15000000,
+                    position: 0,
+                    bankrupt: false,
+                    isBot: true
+                });
+            }
+
+            gameState = {
+                roomCode: "LOKAL",
+                status: "playing",
+                hostId: currentUser.uid,
+                turnIndex: 0,
+                turnPhase: "roll", // roll, action, end
+                dice: [1, 1],
+                players: players,
+                properties: {}, // { tileId: { ownerUid, level } }
+                logs: [`Game dimulai! Selamat datang di Kabupaten Sidoarjo!`, `${playerName} bermain sebagai ${charObj.name}.`]
+            };
+
+            document.getElementById("lobby-screen").classList.add("hidden");
+            document.getElementById("waiting-room-screen").classList.add("hidden");
+            document.getElementById("game-hud").classList.remove("hidden");
+            onWindowResize();
+
+            renderGameHUD();
+            sync3DBoardState();
+            sound.playBonusMoney();
+            showToast("Permainan Monopoli Sidoarjo Dimulai!", "success");
+        }
+
+        // Update State Game (Mendukung Lokal & Firebase Online)
+        async function updateGameState(updates) {
+            if (isLocalMode || !db || !currentRoomCode) {
+                gameState = { ...gameState, ...updates };
+                renderGameHUD();
+                sync3DBoardState();
+                checkBotTurn();
+            } else {
+                try {
+                    const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomCode);
+                    await updateDoc(roomRef, updates);
+                } catch (e) {
+                    console.error("Gagal sinkron Firestore:", e);
+                }
+            }
+        }
+
+        // ==========================================
+        // 5. ANIMASI DADU 3D DENGAN CSS
+        // ==========================================
+        const DICE_ROTATIONS = {
+            1: { x: 0, y: 0 },
+            2: { x: -180, y: 0 },
+            3: { x: 0, y: 90 },
+            4: { x: 0, y: -90 },
+            5: { x: 90, y: 0 },
+            6: { x: -90, y: 0 }
+        };
+
+        function setDiceFace(cubeId, value) {
+            const cube = document.getElementById(cubeId);
+            if (!cube) return;
+            const rot = DICE_ROTATIONS[value] || { x: 0, y: 0 };
+            cube.style.transform = `rotateX(${rot.x}deg) rotateY(${rot.y}deg)`;
+        }
+
+        async function rollDiceWithAnimation(targetD1, targetD2) {
+            const tray = document.getElementById("dice-tray");
+            const cube1 = document.getElementById("cube-1");
+            const cube2 = document.getElementById("cube-2");
+
+            tray.classList.add("tray-shaking");
+            cube1.classList.add("dice-rolling");
+            cube2.classList.add("dice-rolling");
+            sound.playDiceRoll();
+
+            // Biarkan bergulir selama ~1.1 detik
+            await new Promise(res => setTimeout(res, 1100));
+
+            tray.classList.remove("tray-shaking");
+            cube1.classList.remove("dice-rolling");
+            cube2.classList.remove("dice-rolling");
+
+            // Mendarat pada sisi dadu yang dituju (+ 720 deg untuk rotasi mulus)
+            const rot1 = DICE_ROTATIONS[targetD1];
+            const rot2 = DICE_ROTATIONS[targetD2];
+            cube1.style.transform = `rotateX(${rot1.x + 720}deg) rotateY(${rot1.y + 720}deg)`;
+            cube2.style.transform = `rotateX(${rot2.x + 720}deg) rotateY(${rot2.y + 720}deg)`;
+            sound.playDiceLand();
+
+            await new Promise(res => setTimeout(res, 300));
+        }
+
+        // ==========================================
+        // 6. ANIMASI MELANGKAH SATU DESA KE DESA LAINNYA
+        // ==========================================
+        async function movePawnStepByStep(pawnMesh, fromPos, steps, playerObj) {
+            isPawnMoving = true;
+            let currentPos = fromPos;
+
+            for (let s = 1; s <= steps; s++) {
+                const nextPos = (currentPos + 1) % BOARD_TILES.length;
+                const nextTile = BOARD_TILES[nextPos];
+                const targetCoord = tileCoordinates[nextPos];
+
+                // Hitung offset agar pion tidak saling menumpuk
+                const playerIdx = gameState.players.findIndex(p => p.uid === playerObj.uid);
+                const offsetX = (playerIdx % 2 === 0 ? -0.4 : 0.4);
+                const offsetZ = (playerIdx < 2 ? -0.4 : 0.4);
+                const finalTarget = new THREE.Vector3(targetCoord.x + offsetX, 0.15, targetCoord.z + offsetZ);
+
+                // Jalankan animasi lompat satu petak
+                await animateSingleHop(pawnMesh, finalTarget, s);
+                sound.playStep(s);
+
+                // Efek jika melewati Alun-Alun Sidoarjo (START / Petak 0)
+                if (nextPos === 0) {
+                    playerObj.money += 2000000;
+                    sound.playBonusMoney();
+                    showFloatingMoney("+Rp 2.000.000 (Lewat Alun-Alun)", true);
+                    showToast(`💰 ${playerObj.name} melewati Alun-Alun Sidoarjo & dapat bonus Rp 2.000.000!`, "success");
+                }
+
+                currentPos = nextPos;
+            }
+
+            // Mendarat di petak akhir dengan efek membal (squash & stretch)
+            pawnMesh.scale.set(1.2, 0.8, 1.2);
+            await new Promise(res => setTimeout(res, 80));
+            pawnMesh.scale.set(0.9, 1.1, 0.9);
+            await new Promise(res => setTimeout(res, 80));
+            pawnMesh.scale.set(1.0, 1.0, 1.0);
+
+            isPawnMoving = false;
+            return currentPos;
+        }
+
+        // Animasi 1 Hop Melengkung (Parabola)
+        function animateSingleHop(pawnMesh, targetVector, stepNumber) {
+            return new Promise((resolve) => {
+                const startPos = pawnMesh.position.clone();
+                const duration = 250; // 250ms per desa
+                const startTime = performance.now();
+
+                // Putar badan pion menghadap arah tujuan melangkah
+                const dx = targetVector.x - startPos.x;
+                const dz = targetVector.z - startPos.z;
+                pawnMesh.rotation.y = Math.atan2(dx, dz);
+
+                function hopFrame(now) {
+                    const elapsed = now - startTime;
+                    const progress = Math.min(1, elapsed / duration);
+
+                    // Interpolasi X dan Z
+                    pawnMesh.position.x = startPos.x + dx * progress;
+                    pawnMesh.position.z = startPos.z + dz * progress;
+
+                    // Kurva Parabola Y (Lompatan ke atas)
+                    pawnMesh.position.y = 0.15 + Math.sin(progress * Math.PI) * 0.85;
+
+                    if (progress < 1) {
+                        requestAnimationFrame(hopFrame);
+                    } else {
+                        pawnMesh.position.copy(targetVector);
+                        resolve();
+                    }
+                }
+                requestAnimationFrame(hopFrame);
+            });
+        }
+
+        // ==========================================
+        // 7. ANIMASI & SUARA WILAYAH DIKUASAI / DISEWA
+        // ==========================================
+        // Efek Ring Shockwave & Drop Building 3D saat Wilayah Dikuasai
+        function triggerTerritoryOccupy3DEffect(tileId, colorHex) {
+            const tilePos = tileCoordinates[tileId];
+            if (!tilePos) return;
+
+            // 1. Shockwave Ring Mengembang di atas petak
+            const ringGeo = new THREE.RingGeometry(0.2, 0.45, 32);
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: new THREE.Color(colorHex),
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.95
+            });
+            const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+            ringMesh.rotation.x = -Math.PI / 2;
+            ringMesh.position.set(tilePos.x, 0.18, tilePos.z);
+            scene.add(ringMesh);
+
+            const startTime = performance.now();
+            const animDuration = 900;
+
+            function animateRing(now) {
+                const p = (now - startTime) / animDuration;
+                if (p < 1) {
+                    const scale = 1 + p * 4.5;
+                    ringMesh.scale.set(scale, scale, scale);
+                    ringMat.opacity = 0.95 * (1 - p);
+                    requestAnimationFrame(animateRing);
+                } else {
+                    scene.remove(ringMesh);
+                    ringGeo.dispose();
+                    ringMat.dispose();
+                }
+            }
+            requestAnimationFrame(animateRing);
+        }
+
+        // ==========================================
+        // 8. LOGIKA GILIRAN, AKSI DADU & EVALUASI PETAK
+        // ==========================================
+        async function rollDiceAction() {
+            if (isRolling || isPawnMoving || !gameState) return;
+            const activePlayer = gameState.players[gameState.turnIndex];
+            if (gameState.turnPhase !== "roll") return;
+
+            // Jika mode lokal dan pemain aktif adalah manusia, atau online milik user
+            if (!isLocalMode && activePlayer.uid !== currentUser.uid) return;
+
+            isRolling = true;
+            document.getElementById("btn-roll-dice").disabled = true;
+
+            const d1 = Math.floor(Math.random() * 6) + 1;
+            const d2 = Math.floor(Math.random() * 6) + 1;
+            const steps = d1 + d2;
+
+            // Jalankan animasi kocok dadu 3D
+            await rollDiceWithAnimation(d1, d2);
+
+            const pawn = pawnMeshes[activePlayer.uid];
+            const oldPos = activePlayer.position;
+
+            // Log kocokan
+            let newLogs = [`🎲 ${activePlayer.name} mengocok dadu (${d1} + ${d2} = ${steps}).`, ...gameState.logs];
+
+            // Animasi langkah demi langkah desa per desa
+            const finalPos = await movePawnStepByStep(pawn, oldPos, steps, activePlayer);
+            activePlayer.position = finalPos;
+
+            const tile = BOARD_TILES[finalPos];
+            newLogs.unshift(`${activePlayer.avatar} ${activePlayer.name} tiba di ${tile.name} (${tile.sub}).`);
+
+            // Evaluasi efek petak
+            await evaluateTileLanding(activePlayer, tile, newLogs, d1, d2);
+            isRolling = false;
+        }
+
+        // Evaluasi Aksi Petak Tempat Mendarat
+        async function evaluateTileLanding(player, tile, newLogs, d1, d2) {
+            let nextPhase = "end";
+
+            if (tile.type === "property" || tile.type === "station") {
+                const prop = gameState.properties[tile.id];
+
+                if (!prop) {
+                    // Wilayah Belum Ada Pemilik
+                    if (player.money >= tile.price) {
+                        if (player.isBot) {
+                            // Bot memutuskan membeli jika punya saldo aman (sisa > Rp 1 Juta)
+                            if (player.money - tile.price >= 1000000) {
+                                await executeBuyProperty(tile, player, newLogs, d1, d2);
+                                return;
+                            } else {
+                                newLogs.unshift(`🤖 ${player.name} memutuskan menghemat uang dan tidak membeli ${tile.name}.`);
+                            }
+                        } else {
+                            nextPhase = "action";
+                            openBuyModal(tile);
+                        }
+                    } else {
+                        newLogs.unshift(`Uang ${player.name} tidak cukup untuk membeli ${tile.name}.`);
+                        showToast(`Uang tidak cukup untuk membeli ${tile.name}`, "info");
+                    }
+                } else if (prop.ownerUid !== player.uid) {
+                    // Milik Pemain Lain -> Bayar Sewa!
+                    const owner = gameState.players.find(p => p.uid === prop.ownerUid);
+                    if (owner && !owner.bankrupt) {
+                        const rentAmount = tile.rent * (prop.level || 1);
+                        player.money -= rentAmount;
+                        owner.money += rentAmount;
+
+                        sound.playRent();
+                        showFloatingMoney(`-Rp ${rentAmount.toLocaleString('id-ID')}`, false);
+                        showEventBanner("RETRIBUSI SEWA DESA!", `${player.name} membayar sewa ${formatRp(rentAmount)} ke ${owner.name} di ${tile.name}.`, "fa-money-bill-wave");
+
+                        newLogs.unshift(`💸 ${player.name} membayar sewa ${formatRp(rentAmount)} ke ${owner.name} di ${tile.name}.`);
+                        if (!player.isBot) {
+                            showInfoModal(tile, `Wilayah ini milik ${owner.name}. Kamu membayar retribusi sewa sebesar ${formatRp(rentAmount)}.`);
+                        }
+                    }
+                } else {
+                    // Milik Sendiri -> Opsi Bangun / Naik Level
+                    const upgradeCost = Math.floor(tile.price * 0.6);
+                    const currentLvl = prop.level || 1;
+                    if (currentLvl < 3 && player.money >= upgradeCost) {
+                        if (player.isBot) {
+                            if (player.money - upgradeCost >= 1500000) {
+                                await executeUpgradeProperty(tile, upgradeCost, player, newLogs, d1, d2);
+                                return;
+                            }
+                        } else {
+                            nextPhase = "action";
+                            openUpgradeModal(tile, currentLvl, upgradeCost);
+                        }
+                    }
+                }
+            } else if (tile.type === "tax") {
+                player.money -= tile.rent;
+                sound.playPenalty();
+                showFloatingMoney(`-Rp ${tile.rent.toLocaleString('id-ID')}`, false);
+                newLogs.unshift(`🧾 ${player.name} membayar Pajak Tambak & Hasil Bumi ${formatRp(tile.rent)}.`);
+                if (!player.isBot) showInfoModal(tile, tile.desc);
+            } else if (tile.type === "chance") {
+                const card = CHANCE_CARDS[Math.floor(Math.random() * CHANCE_CARDS.length)];
+                player.money += card.money;
+                if (card.money >= 0) {
+                    sound.playBonusMoney();
+                    showFloatingMoney(`+Rp ${card.money.toLocaleString('id-ID')}`, true);
+                } else {
+                    sound.playPenalty();
+                    showFloatingMoney(`-Rp ${Math.abs(card.money).toLocaleString('id-ID')}`, false);
+                }
+                newLogs.unshift(`🎴 Warta Sidoarjo (${player.name}): ${card.text}`);
+                if (!player.isBot) showInfoModal(tile, card.text);
+            } else if (tile.type === "gotojail") {
+                player.position = 6; // Mundur ke Porong
+                player.money -= 500000;
+                sound.playPenalty();
+                showFloatingMoney(`-Rp 500.000`, false);
+                showEventBanner("TERJEBAK MACET WARU!", `${player.name} dialihkan ke tanggul lumpur Porong & kena denda Rp 500.000!`, "fa-traffic-light");
+                newLogs.unshift(`🚧 ${player.name} terjebak macet Bundaran Waru! Dialihkan ke Porong & denda Rp 500.000.`);
+                
+                // Pindahkan mesh pion ke petak 6
+                const targetCoord = tileCoordinates[6];
+                pawnMeshes[player.uid].position.set(targetCoord.x, 0.15, targetCoord.z);
+                if (!player.isBot) showInfoModal(tile, tile.desc);
+            } else {
+                if (tile.id !== 0) showToast(`Singgah di ${tile.name}`, "info");
+            }
+
+            // Evaluasi Kebangkrutan
+            if (player.money < 0) {
+                player.bankrupt = true;
+                player.money = 0;
+                sound.playPenalty();
+                newLogs.unshift(`💥 ${player.name} dinyatakan BANGKRUT!`);
+                showToast(`${player.name} telah Bangkrut!`, "error");
+            }
+
+            // Cek Kemenangan
+            const activePlayers = gameState.players.filter(p => !p.bankrupt);
+            let newStatus = gameState.status;
+            if (gameState.players.length > 1 && activePlayers.length === 1) {
+                newStatus = "finished";
+                sound.playOccupy();
+                newLogs.unshift(`🏆 SELAMAT! ${activePlayers[0].name} menjadi Penguasa Tunggal Kabupaten Sidoarjo!`);
+                showEventBanner("JUARA MONOPOLI SIDOARJO!", `${activePlayers[0].name} berhasil menguasai seluruh Kabupaten Sidoarjo!`, "fa-trophy", 5000);
+            }
+
+            await updateGameState({
+                dice: [d1, d2],
+                players: gameState.players,
+                turnPhase: player.bankrupt ? "end" : nextPhase,
+                status: newStatus,
+                logs: newLogs.slice(0, 25)
+            });
+
+            // Jika bot dan giliran selesai, otomatis selesaikan giliran
+            if (player.isBot && nextPhase === "end") {
+                setTimeout(() => endTurnAction(), 800);
+            }
+        }
+
+        // Eksekusi Beli Wilayah
+        async function executeBuyProperty(tile, player, logs, d1, d2) {
+            player.money -= tile.price;
+            const props = { ...gameState.properties };
+            props[tile.id] = {
+                ownerUid: player.uid,
+                colorIndex: player.colorHex,
+                characterId: player.characterId,
+                level: 1
+            };
+
+            sound.playOccupy();
+            triggerTerritoryOccupy3DEffect(tile.id, player.colorHex);
+            showFloatingMoney(`-Rp ${tile.price.toLocaleString('id-ID')}`, false);
+            showEventBanner("WILAYAH DIKUASAI!", `${player.name} resmi membeli dan menguasai ${tile.name}!`, "fa-landmark");
+
+            logs.unshift(`🏰 ${player.name} resmi mengakuisisi ${tile.name} seharga ${formatRp(tile.price)}!`);
+
+            await updateGameState({
+                dice: [d1 || 1, d2 || 1],
+                players: gameState.players,
+                properties: props,
+                turnPhase: "end",
+                logs: logs.slice(0, 25)
+            });
+
+            if (player.isBot) {
+                setTimeout(() => endTurnAction(), 800);
+            }
+        }
+
+        // Eksekusi Bangun / Upgrade Level Wilayah
+        async function executeUpgradeProperty(tile, cost, player, logs, d1, d2) {
+            player.money -= cost;
+            const props = { ...gameState.properties };
+            const nextLvl = (props[tile.id].level || 1) + 1;
+            props[tile.id].level = nextLvl;
+
+            sound.playOccupy();
+            triggerTerritoryOccupy3DEffect(tile.id, player.colorHex);
+            showFloatingMoney(`-Rp ${cost.toLocaleString('id-ID')}`, false);
+            showEventBanner("PROPERTI DIBANGUN!", `${player.name} membangun gedung Level ${nextLvl} di ${tile.name}!`, "fa-hotel");
+
+            logs.unshift(`🏗️ ${player.name} membangun ruko Level ${nextLvl} di ${tile.name}!`);
+
+            await updateGameState({
+                dice: [d1 || 1, d2 || 1],
+                players: gameState.players,
+                properties: props,
+                turnPhase: "end",
+                logs: logs.slice(0, 25)
+            });
+
+            if (player.isBot) {
+                setTimeout(() => endTurnAction(), 800);
+            }
+        }
+
+        // Akhiri Giliran & Pindah ke Pemain Berikutnya
+        async function endTurnAction() {
+            if (!gameState) return;
+            sound.playClick();
+            const total = gameState.players.length;
+            let nextIdx = (gameState.turnIndex + 1) % total;
+            
+            let loopGuard = 0;
+            while (gameState.players[nextIdx].bankrupt && loopGuard < total) {
+                nextIdx = (nextIdx + 1) % total;
+                loopGuard++;
+            }
+
+            await updateGameState({
+                turnIndex: nextIdx,
+                turnPhase: "roll"
+            });
+        }
+
+        // Otomatis Giliran Bot (Jika Pemain Berikutnya adalah AI Bot)
+        function checkBotTurn() {
+            if (!gameState || gameState.status !== "playing" || isRolling || isPawnMoving) return;
+            const activePlayer = gameState.players[gameState.turnIndex];
+            if (activePlayer && activePlayer.isBot && gameState.turnPhase === "roll") {
+                setTimeout(() => {
+                    rollDiceAction();
+                }, 1000);
+            }
+        }
+
+        // ==========================================
+        // 9. RENDER HUD GAME & DOMPET INDONESIA
+        // ==========================================
+        function renderGameHUD() {
+            if (!gameState) return;
+            document.getElementById("hud-room-code").innerText = gameState.roomCode;
+
+            // Render Kartu Pemain di Sisi Atas
+            const hudEl = document.getElementById("players-hud");
+            hudEl.innerHTML = "";
+            gameState.players.forEach((p, idx) => {
+                const isTurn = idx === gameState.turnIndex && gameState.status === "playing";
+                const isMe = p.uid === currentUser.uid;
+                hudEl.innerHTML += `
+                    <div class="bg-slate-900/90 backdrop-blur-md border-2 ${isTurn ? 'active-turn-card' : 'border-slate-800'} px-3 py-2 rounded-2xl flex items-center gap-2.5 transition-all ${p.bankrupt ? 'opacity-35 grayscale' : ''}">
+                        <div class="w-8 h-8 rounded-xl flex items-center justify-center text-lg shadow-md font-bold" style="background-color: ${p.colorHex}22; border: 1.5px solid ${p.colorHex}">
+                            ${p.avatar}
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-white flex items-center gap-1">
+                                ${p.name} ${isMe ? '<span class="text-[10px] text-emerald-400 font-normal">(Kamu)</span>' : ''}
+                            </div>
+                            <div class="text-xs font-mono font-bold text-amber-400">${p.bankrupt ? 'BANGKRUT' : formatRp(p.money)}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Update Saldo Kas Pemain Saya
+            const myPlayer = gameState.players.find(p => p.uid === currentUser.uid) || gameState.players[0];
+            if (myPlayer) {
+                document.getElementById("hud-my-balance").innerText = formatRp(myPlayer.money);
+            }
+
+            // Render Log Aktivitas
+            const logEl = document.getElementById("game-logs");
+            logEl.innerHTML = gameState.logs.map(l => `<div class="text-slate-300 border-b border-slate-800/80 pb-1">${l}</div>`).join("");
+
+            // Update Dadu UI
+            if (!isRolling) {
+                setDiceFace("cube-1", gameState.dice[0]);
+                setDiceFace("cube-2", gameState.dice[1]);
+            }
+
+            // Kontrol Banner & Tombol Giliran
+            const activePlayer = gameState.players[gameState.turnIndex];
+            const isMyTurn = activePlayer && (activePlayer.uid === currentUser.uid || (isLocalMode && !activePlayer.isBot)) && gameState.status === "playing";
+            const turnText = document.getElementById("turn-text");
+            const btnRoll = document.getElementById("btn-roll-dice");
+            const btnEnd = document.getElementById("btn-end-turn");
+
+            if (gameState.status === "finished") {
+                const winner = gameState.players.find(p => !p.bankrupt) || activePlayer;
+                turnText.innerHTML = `<span class="text-amber-400 font-black">🏆 PEMENANG: ${winner.name}!</span>`;
+                btnRoll.disabled = true;
+                btnEnd.classList.add("hidden");
+                return;
+            }
+
+            if (activePlayer.isBot) {
+                turnText.innerHTML = `<span class="text-slate-300"><i class="fa-solid fa-robot mr-1 text-amber-400"></i> Giliran ${activePlayer.name}...</span>`;
+                btnRoll.disabled = true;
+                btnEnd.classList.add("hidden");
+            } else if (isMyTurn) {
+                turnText.innerHTML = `<span class="text-emerald-400 font-black">Giliranmu, ${activePlayer.name}!</span>`;
+                if (gameState.turnPhase === "roll" && !isRolling && !isPawnMoving) {
+                    btnRoll.disabled = false;
+                    btnEnd.classList.add("hidden");
+                } else if (gameState.turnPhase === "end") {
+                    btnRoll.disabled = true;
+                    btnEnd.classList.remove("hidden");
+                } else {
+                    btnRoll.disabled = true;
+                    btnEnd.classList.add("hidden");
+                }
+            } else {
+                turnText.innerText = `Menunggu giliran ${activePlayer.name}...`;
+                btnRoll.disabled = true;
+                btnEnd.classList.add("hidden");
+            }
+        }
+
+        // Render Rincian Brankas & Dompet Indonesia
+        function openWalletModal() {
+            sound.playClick();
+            const myPlayer = (gameState && gameState.players.find(p => p.uid === currentUser.uid)) || (gameState && gameState.players[0]) || { money: 15000000, name: "Pemain" };
+            const money = myPlayer.money;
+
+            document.getElementById("wallet-total-cash").innerText = formatRp(money);
+
+            // Perhitungan simulasi pecahan lembaran uang kertas Rupiah
+            const count100k = Math.floor(money / 100000);
+            const remainder100k = money % 100000;
+            const count50k = Math.floor(remainder100k / 50000);
+            const remainder50k = remainder100k % 50000;
+            const count20k = Math.floor(remainder50k / 20000);
+            const count10k = Math.floor((remainder50k % 20000) / 10000);
+
+            document.getElementById("bill-count-100k").innerText = `${count100k.toLocaleString('id-ID')} Lembar`;
+            document.getElementById("bill-count-50k").innerText = `${count50k.toLocaleString('id-ID')} Lembar`;
+            document.getElementById("bill-count-20k").innerText = `${count20k.toLocaleString('id-ID')} Lembar`;
+            document.getElementById("bill-count-10k").innerText = `${count10k.toLocaleString('id-ID')} Lembar`;
+
+            // Rincian Daftar Sertifikat Wilayah Dikuasai
+            let propertyValue = 0;
+            const propListEl = document.getElementById("wallet-properties-list");
+            propListEl.innerHTML = "";
+
+            if (gameState && gameState.properties) {
+                const myProps = Object.keys(gameState.properties).filter(tileId => gameState.properties[tileId].ownerUid === myPlayer.uid);
+                document.getElementById("wallet-properties-count").innerText = `${myProps.length} Wilayah`;
+
+                if (myProps.length === 0) {
+                    propListEl.innerHTML = `<div class="text-center py-5 text-slate-500 text-xs italic">Belum memiliki sertifikat desa. Beli wilayah untuk mendulang pendapatan sewa!</div>`;
+                } else {
+                    myProps.forEach(idStr => {
+                        const tileId = parseInt(idStr);
+                        const tile = BOARD_TILES[tileId];
+                        const propData = gameState.properties[tileId];
+                        const level = propData.level || 1;
+                        const curRent = tile.rent * level;
+                        propertyValue += tile.price * level;
+
+                        propListEl.innerHTML += `
+                            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-3.5 h-3.5 rounded-full" style="background-color: ${tile.color}"></span>
+                                    <div>
+                                        <div class="text-xs font-bold text-white">${tile.name}</div>
+                                        <div class="text-[10px] text-slate-400">${tile.sub} • Tingkat ${level}</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-[10px] text-slate-400">Tarif Sewa</div>
+                                    <div class="text-xs font-mono font-bold text-emerald-400">${formatRp(curRent)}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+            }
+
+            // Total Kekayaan Bersih (Kas + Nilai Properti)
+            document.getElementById("wallet-net-worth").innerText = formatRp(money + propertyValue);
+            document.getElementById("wallet-modal").classList.remove("hidden");
+        }
+
+        // ==========================================
+        // 10. MODAL INTERAKSI PETAK (BELI / UPGRADE)
+        // ==========================================
+        function openBuyModal(tile) {
+            const modal = document.getElementById("action-modal");
+            document.getElementById("modal-header-color").style.backgroundColor = tile.color;
+            document.getElementById("modal-tile-type").innerText = tile.sub;
+            document.getElementById("modal-tile-name").innerText = tile.name;
+            document.getElementById("modal-tile-desc").innerText = "Wilayah ini belum memiliki pemilik. Ambil kesempatan untuk menguasainya!";
+            
+            document.getElementById("modal-price-box").classList.remove("hidden");
+            document.getElementById("modal-buy-price").innerText = formatRp(tile.price);
+            document.getElementById("modal-rent-price").innerText = formatRp(tile.rent);
+
+            document.getElementById("modal-buttons").classList.remove("hidden");
+            document.getElementById("btn-modal-ok").classList.add("hidden");
+            
+            const btnBuy = document.getElementById("btn-modal-buy");
+            btnBuy.innerText = "Beli Wilayah";
+            btnBuy.onclick = () => {
+                modal.classList.add("hidden");
+                const activePlayer = gameState.players[gameState.turnIndex];
+                executeBuyProperty(tile, activePlayer, gameState.logs);
+            };
+
+            modal.classList.remove("hidden");
+        }
+
+        function openUpgradeModal(tile, currentLvl, upgradeCost) {
+            const modal = document.getElementById("action-modal");
+            document.getElementById("modal-header-color").style.backgroundColor = tile.color;
+            document.getElementById("modal-tile-type").innerText = `WILAYAH MILIKMU (TINGKAT ${currentLvl})`;
+            document.getElementById("modal-tile-name").innerText = tile.name;
+            document.getElementById("modal-tile-desc").innerText = `Bangun ruko/fasilitas modern di ${tile.name} untuk melipatgandakan biaya retribusi sewa!`;
+            
+            document.getElementById("modal-price-box").classList.remove("hidden");
+            document.getElementById("modal-buy-price").innerText = formatRp(upgradeCost);
+            document.getElementById("modal-rent-price").innerText = formatRp(tile.rent * (currentLvl + 1));
+
+            document.getElementById("modal-buttons").classList.remove("hidden");
+            document.getElementById("btn-modal-ok").classList.add("hidden");
+            
+            const btnBuy = document.getElementById("btn-modal-buy");
+            btnBuy.innerText = "Bangun (+1 Lvl)";
+            btnBuy.onclick = () => {
+                modal.classList.add("hidden");
+                const activePlayer = gameState.players[gameState.turnIndex];
+                executeUpgradeProperty(tile, upgradeCost, activePlayer, gameState.logs);
+            };
+
+            modal.classList.remove("hidden");
+        }
+
+        function showInfoModal(tile, message) {
+            const modal = document.getElementById("action-modal");
+            document.getElementById("modal-header-color").style.backgroundColor = tile.color;
+            document.getElementById("modal-tile-type").innerText = tile.sub;
+            document.getElementById("modal-tile-name").innerText = tile.name;
+            document.getElementById("modal-tile-desc").innerText = message;
+            
+            document.getElementById("modal-price-box").classList.add("hidden");
+            document.getElementById("modal-buttons").classList.add("hidden");
+            document.getElementById("btn-modal-ok").classList.remove("hidden");
+
+            modal.classList.remove("hidden");
+        }
+
+        // ==========================================
+        // 11. ENGINE GRAFIS 3D (THREE.JS)
+        // ==========================================
+        let scene, camera, renderer;
+        let boardGroup, pawnsGroup, buildingsGroup;
+        const tileCoordinates = [];
+        const pawnMeshes = {};
+        const buildingMeshes = {};
+
+        let isDragging = false;
+        let prevMouse = { x: 0, y: 0 };
+        let camAngle = { theta: Math.PI / 4, phi: Math.PI / 3.2 };
+        let camRadius = 24;
+
+        function init3D() {
+            const container = document.getElementById("canvas-container");
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0b1120);
+            scene.fog = new THREE.FogExp2(0x0b1120, 0.016);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            updateCameraPosition();
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // Pencahayaan Lembut & Arah Bayangan
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xfffbeb, 0.9);
+            dirLight.position.set(14, 24, 12);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            scene.add(dirLight);
+
+            boardGroup = new THREE.Group();
+            pawnsGroup = new THREE.Group();
+            buildingsGroup = new THREE.Group();
+            scene.add(boardGroup);
+            scene.add(pawnsGroup);
+            scene.add(buildingsGroup);
+
+            buildSidoarjoBoard3D();
+            setupCameraControls(renderer.domElement);
+
+            window.addEventListener("resize", onWindowResize);
+            animate();
+        }
+
+        // Tekstur Petak 2D ke 3D
+        function createTileTexture(tile) {
+            const canvas = document.createElement("canvas");
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext("2d");
+
+            ctx.fillStyle = "#f8fafc";
+            ctx.fillRect(0, 0, 256, 256);
+
+            ctx.strokeStyle = "#334155";
+            ctx.lineWidth = 8;
+            ctx.strokeRect(4, 4, 248, 248);
+
+            // Header Warna Wilayah
+            ctx.fillStyle = tile.color;
+            ctx.fillRect(8, 8, 240, 56);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 20px Inter, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(tile.sub.toUpperCase(), 128, 43);
+
+            ctx.fillStyle = "#0f172a";
+            ctx.font = "900 24px Inter, sans-serif";
+            const words = tile.name.split(" ");
+            let y = 115;
+            words.forEach(w => {
+                ctx.fillText(w, 128, y);
+                y += 28;
+            });
+
+            if (tile.price > 0) {
+                ctx.fillStyle = "#059669";
+                ctx.font = "bold 22px Inter, sans-serif";
+                ctx.fillText("Rp " + (tile.price / 1000000).toFixed(1) + " Jt", 128, 225);
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.anisotropy = 4;
+            return tex;
+        }
+
+        // Tekstur Pusat Papan Sidoarjo
+        function createCenterBoardTexture() {
+            const canvas = document.createElement("canvas");
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext("2d");
+
+            const grad = ctx.createLinearGradient(0, 0, 512, 512);
+            grad.addColorStop(0, "#064e3b");
+            grad.addColorStop(1, "#0f172a");
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 512, 512);
+
+            ctx.strokeStyle = "#fbbf24";
+            ctx.lineWidth = 10;
+            ctx.strokeRect(24, 24, 464, 464);
+
+            ctx.fillStyle = "#fbbf24";
+            ctx.font = "900 44px Inter, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("MONOPOLI 3D", 256, 210);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "900 54px Inter, sans-serif";
+            ctx.fillText("SIDOARJO", 256, 275);
+
+            ctx.fillStyle = "#6ee7b7";
+            ctx.font = "bold 22px Inter, sans-serif";
+            ctx.fillText("KABUPATEN DELTA • JAWA TIMUR", 256, 330);
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // Membangun Papan Sidoarjo 7x7 (24 Petak Keliling)
+        function buildSidoarjoBoard3D() {
+            const tileSize = 2.2;
+            const gridSpan = 6;
+            const offset = (gridSpan * tileSize) / 2;
+
+            const baseGeo = new THREE.BoxGeometry(16.2, 0.6, 16.2);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
+            const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+            baseMesh.position.y = -0.35;
+            baseMesh.receiveShadow = true;
+            boardGroup.add(baseMesh);
+
+            const centerGeo = new THREE.PlaneGeometry(10.8, 10.8);
+            const centerMat = new THREE.MeshStandardMaterial({ map: createCenterBoardTexture(), roughness: 0.5 });
+            const centerMesh = new THREE.Mesh(centerGeo, centerMat);
+            centerMesh.rotation.x = -Math.PI / 2;
+            centerMesh.position.y = 0.02;
+            centerMesh.receiveShadow = true;
+            boardGroup.add(centerMesh);
+
+            buildSidoarjoMonument();
+
+            const coords = [];
+            for (let i = 0; i <= 6; i++) coords.push({ x: offset - i * tileSize, z: offset }); // 0..6 (Bawah: Alun-Alun dll)
+            for (let i = 1; i <= 5; i++) coords.push({ x: -offset, z: offset - i * tileSize }); // 7..11 (Kiri)
+            for (let i = 0; i <= 6; i++) coords.push({ x: -offset + i * tileSize, z: -offset }); // 12..18 (Atas: GOR dll)
+            for (let i = 1; i <= 5; i++) coords.push({ x: offset, z: -offset + i * tileSize }); // 19..23 (Kanan)
+
+            BOARD_TILES.forEach((tile, index) => {
+                const pos = coords[index];
+                tileCoordinates.push(pos);
+
+                const geo = new THREE.BoxGeometry(tileSize * 0.96, 0.2, tileSize * 0.96);
+                const topMat = new THREE.MeshStandardMaterial({ map: createTileTexture(tile), roughness: 0.4 });
+                const sideMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1 });
+                
+                const mesh = new THREE.Mesh(geo, [sideMat, sideMat, topMat, sideMat, sideMat, sideMat]);
+                mesh.position.set(pos.x, 0.05, pos.z);
+                mesh.receiveShadow = true;
+                boardGroup.add(mesh);
+            });
+        }
+
+        // Tugu Miniatur Jayandaru Delta di Tengah
+        function buildSidoarjoMonument() {
+            const monGroup = new THREE.Group();
+            
+            const pedGeo = new THREE.CylinderGeometry(1.1, 1.4, 0.4, 16);
+            const goldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.6, roughness: 0.3 });
+            const ped = new THREE.Mesh(pedGeo, goldMat);
+            ped.position.y = 0.2;
+            ped.castShadow = true;
+            monGroup.add(ped);
+
+            const pillarGeo = new THREE.CylinderGeometry(0.35, 0.6, 2.2, 12);
+            const pillar = new THREE.Mesh(pillarGeo, goldMat);
+            pillar.position.y = 1.4;
+            pillar.castShadow = true;
+            monGroup.add(pillar);
+
+            const topGeo = new THREE.OctahedronGeometry(0.65);
+            const emeraldMat = new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x047857, metalness: 0.4, roughness: 0.2 });
+            const topCrystal = new THREE.Mesh(topGeo, emeraldMat);
+            topCrystal.position.y = 2.9;
+            topCrystal.castShadow = true;
+            monGroup.add(topCrystal);
+
+            monGroup.userData.crystal = topCrystal;
+            boardGroup.add(monGroup);
+            boardGroup.userData.monument = monGroup;
+        }
+
+        // Membuat Pion 3D Berdasarkan Karakter (Dengan Mahkota/Peci/Permata)
+        function createPlayerPawn3D(playerObj) {
+            const group = new THREE.Group();
+            const colorInt = playerObj.colorInt || 0xef4444;
+            const mat = new THREE.MeshStandardMaterial({ color: colorInt, roughness: 0.3, metalness: 0.2 });
+
+            // Basis & Badan Pion
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.42, 0.2, 16), mat);
+            base.position.y = 0.1;
+            base.castShadow = true;
+
+            const body = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.85, 16), mat);
+            body.position.y = 0.55;
+            body.castShadow = true;
+
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 16), mat);
+            head.position.y = 1.05;
+            head.castShadow = true;
+
+            group.add(base, body, head);
+
+            // Tambahkan Topper Khas Karakter
+            const charObj = CHARACTERS.find(c => c.id === playerObj.characterId);
+            const topperType = charObj ? charObj.topper : "crown";
+
+            if (topperType === "crown") {
+                // Mahkota Emas Cak Budi
+                const crownBase = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.16, 0.1, 8), new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.8, roughness: 0.2 }));
+                crownBase.position.y = 1.25;
+                group.add(crownBase);
+                for (let i = 0; i < 5; i++) {
+                    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.14, 4), new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.8 }));
+                    const ang = (i / 5) * Math.PI * 2;
+                    spike.position.set(Math.cos(ang) * 0.13, 1.35, Math.sin(ang) * 0.13);
+                    group.add(spike);
+                }
+            } else if (topperType === "peci") {
+                // Peci Hitam Pak Lurah
+                const peci = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.18, 16), new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.9 }));
+                peci.position.y = 1.28;
+                group.add(peci);
+            } else if (topperType === "gem") {
+                // Kristal Berlian Mbak Maya
+                const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.16), new THREE.MeshStandardMaterial({ color: 0xf472b6, emissive: 0xdb2777, roughness: 0.1 }));
+                gem.position.y = 1.32;
+                group.add(gem);
+            } else if (topperType === "warrior") {
+                // Ikat Kepala Pendekar Mas Bayu
+                const horn1 = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.22, 8), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+                horn1.position.set(-0.14, 1.3, 0);
+                horn1.rotation.z = 0.4;
+                const horn2 = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.22, 8), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+                horn2.position.set(0.14, 1.3, 0);
+                horn2.rotation.z = -0.4;
+                group.add(horn1, horn2);
+            } else if (topperType === "turban") {
+                // Sorban Putih Pak Haji
+                const turban = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 }));
+                turban.position.y = 1.26;
+                group.add(turban);
+            } else {
+                // Bintang Ning Ayu
+                const star = new THREE.Mesh(new THREE.DodecahedronGeometry(0.16), new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xeab308, roughness: 0.2 }));
+                star.position.y = 1.32;
+                group.add(star);
+            }
+
+            return group;
+        }
+
+        // Rumah / Gedung 3D
+        function createBuilding3D(colorInt, level) {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({ color: colorInt, roughness: 0.4 });
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+
+            for (let i = 0; i < level; i++) {
+                const height = level === 3 ? 0.85 : 0.45;
+                const house = new THREE.Mesh(new THREE.BoxGeometry(0.45, height, 0.45), mat);
+                house.position.set((i - (level - 1) / 2) * 0.52, height / 2 + 0.15, 0);
+                house.castShadow = true;
+
+                const roof = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.3, 4), roofMat);
+                roof.position.set(house.position.x, height + 0.3, 0);
+                roof.rotation.y = Math.PI / 4;
+                roof.castShadow = true;
+
+                group.add(house, roof);
+            }
+            return group;
+        }
+
+        // Sinkronisasi Pion & Properti 3D
+        function sync3DBoardState() {
+            if (!gameState) return;
+
+            // Update Pion Pemain
+            gameState.players.forEach((p, idx) => {
+                if (p.bankrupt) {
+                    if (pawnMeshes[p.uid]) {
+                        pawnsGroup.remove(pawnMeshes[p.uid]);
+                        delete pawnMeshes[p.uid];
+                    }
+                    return;
+                }
+
+                if (!pawnMeshes[p.uid]) {
+                    const pawn = createPlayerPawn3D(p);
+                    pawnsGroup.add(pawn);
+                    pawnMeshes[p.uid] = pawn;
+                    // Posisi awal
+                    const coord = tileCoordinates[p.position];
+                    pawn.position.set(coord.x, 0.15, coord.z);
+                }
+            });
+
+            // Update Bangunan Properti
+            Object.keys(gameState.properties).forEach((tileIdStr) => {
+                const tileId = parseInt(tileIdStr);
+                const prop = gameState.properties[tileId];
+                const key = `${tileId}_${prop.level}`;
+
+                if (!buildingMeshes[key]) {
+                    Object.keys(buildingMeshes).forEach(k => {
+                        if (k.startsWith(`${tileId}_`)) {
+                            buildingsGroup.remove(buildingMeshes[k]);
+                            delete buildingMeshes[k];
+                        }
+                    });
+
+                    const owner = gameState.players.find(p => p.uid === prop.ownerUid);
+                    const colorInt = owner ? owner.colorInt : 0x10b981;
+                    const bMesh = createBuilding3D(colorInt, prop.level || 1);
+                    const tilePos = tileCoordinates[tileId];
+                    bMesh.position.set(tilePos.x, 0, tilePos.z);
+                    buildingsGroup.add(bMesh);
+                    buildingMeshes[key] = bMesh;
+                }
+            });
+        }
+
+        // Kontrol Orbit Kamera
+        function setupCameraControls(domElement) {
+            domElement.addEventListener("mousedown", (e) => {
+                isDragging = true;
+                prevMouse = { x: e.clientX, y: e.clientY };
+            });
+            window.addEventListener("mouseup", () => isDragging = false);
+            window.addEventListener("mousemove", (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - prevMouse.x;
+                const dy = e.clientY - prevMouse.y;
+                camAngle.theta -= dx * 0.007;
+                camAngle.phi = Math.max(0.35, Math.min(Math.PI / 2.2, camAngle.phi - dy * 0.007));
+                prevMouse = { x: e.clientX, y: e.clientY };
+                updateCameraPosition();
+            });
+
+            domElement.addEventListener("wheel", (e) => {
+                camRadius = Math.max(14, Math.min(34, camRadius + e.deltaY * 0.01));
+                updateCameraPosition();
+            }, { passive: true });
+        }
+
+        function updateCameraPosition() {
+            camera.position.x = camRadius * Math.sin(camAngle.phi) * Math.cos(camAngle.theta);
+            camera.position.y = camRadius * Math.cos(camAngle.phi);
+            camera.position.z = camRadius * Math.sin(camAngle.phi) * Math.sin(camAngle.theta);
+            camera.lookAt(0, 0, 0);
+        }
+
+        function onWindowResize() {
+            if (!camera || !renderer) return;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Loop Render 60fps
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (boardGroup && boardGroup.userData.monument) {
+                boardGroup.userData.monument.userData.crystal.rotation.y += 0.018;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // ==========================================
+        // 12. EVENT LISTENERS TOMBOL & INISIALISASI
+        // ==========================================
+        document.getElementById("btn-start-local-game").addEventListener("click", startLocalGame);
+        
+        // Pilihan Jumlah Pemain Bot
+        document.querySelectorAll(".btn-player-count").forEach(btn => {
+            btn.addEventListener("click", () => {
+                sound.playClick();
+                document.querySelectorAll(".btn-player-count").forEach(b => {
+                    b.classList.remove("bg-amber-500", "text-slate-900");
+                    b.classList.add("bg-slate-700", "text-white");
+                });
+                btn.classList.remove("bg-slate-700", "text-white");
+                btn.classList.add("bg-amber-500", "text-slate-900");
+                localPlayerCount = parseInt(btn.dataset.players);
+            });
+        });
+
+        // Suara Mute / Unmute
+        const btnToggleSound = document.getElementById("btn-toggle-sound");
+        const soundIcon = document.getElementById("sound-icon");
+        function updateSoundUI() {
+            if (sound.muted) {
+                soundIcon.className = "fa-solid fa-volume-xmark text-rose-400";
+            } else {
+                soundIcon.className = "fa-solid fa-volume-high text-amber-400";
+            }
+        }
+        btnToggleSound.addEventListener("click", () => {
+            const isMuted = sound.toggleMute();
+            updateSoundUI();
+            if (!isMuted) sound.playClick();
+            showToast(isMuted ? "Suara Efek Dinonaktifkan" : "Suara Efek Aktif", "info");
+        });
+        updateSoundUI();
+
+        // Tombol Dompet & Brankas Indonesia
+        document.getElementById("btn-open-wallet").addEventListener("click", openWalletModal);
+        document.getElementById("btn-close-wallet").addEventListener("click", () => {
+            document.getElementById("wallet-modal").classList.add("hidden");
+        });
+
+        // Tombol Dadu & Giliran
+        document.getElementById("btn-roll-dice").addEventListener("click", rollDiceAction);
+        document.getElementById("btn-end-turn").addEventListener("click", endTurnAction);
+
+        document.getElementById("btn-modal-skip").addEventListener("click", () => {
+            document.getElementById("action-modal").classList.add("hidden");
+            updateGameState({ turnPhase: "end" });
+        });
+        document.getElementById("btn-modal-ok").addEventListener("click", () => {
+            document.getElementById("action-modal").classList.add("hidden");
+        });
+
+        document.getElementById("btn-reset-cam").addEventListener("click", () => {
+            sound.playClick();
+            camAngle = { theta: Math.PI / 4, phi: Math.PI / 3.2 };
+            camRadius = 24;
+            updateCameraPosition();
+        });
+
+        document.getElementById("btn-toggle-log").addEventListener("click", () => {
+            sound.playClick();
+            const panel = document.getElementById("log-panel");
+            panel.classList.toggle("hidden");
+            panel.classList.toggle("flex");
+        });
+
+        // Online Firebase Room Triggers (Bila Digunakan)
+        document.getElementById("btn-create-room").addEventListener("click", () => {
+            if (!db) {
+                showToast("Server online tidak terkonfigurasi. Mengalihkan ke mode lokal...", "info");
+                startLocalGame();
+                return;
+            }
+        });
+        document.getElementById("btn-join-room").addEventListener("click", () => {
+            if (!db) {
+                showToast("Server online tidak terkonfigurasi. Memulai permainan lokal...", "info");
+                startLocalGame();
+                return;
+            }
+        });
+
+        // Jalankan saat load
+        window.onload = () => {
+            renderCharacterSelector();
+            init3D();
+            initFirebase();
+        };
+    </script>
+</body>
+</html>

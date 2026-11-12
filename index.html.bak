@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monopoli 3D Sidoarjo - Multiplayer</title>
+    <!-- Tailwind CSS untuk UI yang responsif dan modern -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js untuk rendering grafis 3D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Font Inter & Font Awesome untuk ikon -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            background-color: #0f172a;
+            user-select: none;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        .ui-layer {
+            position: relative;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .pointer-events-auto {
+            pointer-events: auto;
+        }
+        /* Animasi Dadu 3D CSS untuk indikator UI */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+            50% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.9); }
+        }
+        .active-turn-card {
+            animation: pulse-glow 2s infinite;
+            border-color: #3b82f6 !important;
+        }
+        /* Custom scrollbar untuk log aktivitas */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.5);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="text-slate-100">
+
+    <!-- Container Canvas 3D -->
+    <div id="canvas-container"></div>
+
+    <!-- Layar Lobi Multiplayer (Muncul di awal) -->
+    <div id="lobby-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-md p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white text-3xl shadow-lg mb-4">
+                    <i class="fa-solid fa-city"></i>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">MONOPOLI SIDOARJO</h1>
+                <p class="text-slate-400 text-sm mt-1">Edisi Desa & Kecamatan 3D Multiplayer</p>
+            </div>
+
+            <!-- Status Koneksi -->
+            <div id="auth-status" class="text-xs text-center py-2 px-3 rounded-lg bg-slate-900/60 text-amber-400 mb-6 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Menghubungkan ke server multiplayer...
+            </div>
+
+            <div id="lobby-controls" class="space-y-4 opacity-50 pointer-events-none transition-opacity duration-300">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Nama Pemain</label>
+                    <input type="text" id="player-name-input" placeholder="Masukkan namamu (cth: Cak Budi)" maxlength="15"
+                        class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-emerald-500 transition">
+                </div>
+
+                <div class="pt-2">
+                    <button id="btn-create-room" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold shadow-lg shadow-emerald-900/30 transition transform active:scale-95 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plus-circle"></i> Buat Room Baru
+                    </button>
+                </div>
+
+                <div class="relative flex py-2 items-center">
+                    <div class="flex-grow border-t border-slate-700"></div>
+                    <span class="flex-shrink mx-4 text-slate-500 text-xs uppercase font-semibold">Atau Gabung Room</span>
+                    <div class="flex-grow border-t border-slate-700"></div>
+                </div>
+
+                <div class="flex gap-2">
+                    <input type="text" id="room-code-input" placeholder="KODE ROOM" maxlength="6"
+                        class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white uppercase font-mono tracking-widest text-center focus:outline-none focus:border-blue-500 transition">
+                    <button id="btn-join-room" class="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-900/30 transition transform active:scale-95">
+                        Gabung
+                    </button>
+                </div>
+            </div>
+
+            <!-- Info User ID -->
+            <div class="mt-6 pt-4 border-t border-slate-700/50 text-center">
+                <p class="text-[10px] text-slate-500 font-mono break-all" id="display-userid">ID: Menunggu...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Layar Ruang Tunggu (Waiting Room) -->
+    <div id="waiting-room-screen" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-slate-900/90 backdrop-blur-md p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <span class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Ruang Tunggu</span>
+                    <h2 class="text-2xl font-black text-white">Kode: <span id="waiting-room-code" class="font-mono text-amber-400 select-all">------</span></h2>
+                </div>
+                <button id="btn-copy-code" class="p-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 transition" title="Salin Kode Room">
+                    <i class="fa-solid fa-copy"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-3">Bagikan kode ini ke temanmu untuk bermain bersama (Maks. 4 Pemain):</p>
+
+            <div id="waiting-players-list" class="space-y-2 mb-6">
+                <!-- Daftar pemain akan diisi dinamis -->
+            </div>
+
+            <div class="flex gap-3">
+                <button id="btn-leave-room" class="w-1/3 py-3 rounded-xl bg-slate-700 hover:bg-rose-600/80 text-white font-semibold transition">
+                    Keluar
+                </button>
+                <button id="btn-start-game" class="w-2/3 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    Mulai Permainan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HUD Utama Dalam Permainan -->
+    <div id="game-hud" class="hidden ui-layer fixed inset-0 flex flex-col justify-between p-3 sm:p-5">
+        
+        <!-- Bagian Atas: Info Room, Daftar Pemain & Kontrol Kamera -->
+        <div class="flex flex-col sm:flex-row justify-between items-start gap-3">
+            <!-- Kartu Pemain -->
+            <div id="players-hud" class="flex flex-wrap gap-2 pointer-events-auto max-w-full">
+                <!-- Diisi dinamis -->
+            </div>
+
+            <!-- Kontrol Kanan Atas -->
+            <div class="flex items-center gap-2 pointer-events-auto self-end sm:self-start">
+                <div class="bg-slate-900/80 backdrop-blur-md border border-slate-700/80 px-3 py-2 rounded-xl text-xs font-mono flex items-center gap-2">
+                    <span class="text-slate-400">ROOM:</span>
+                    <span id="hud-room-code" class="font-bold text-amber-400">------</span>
+                </div>
+                <button id="btn-reset-cam" class="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 backdrop-blur-md border border-slate-700/80 text-slate-200 transition" title="Reset Kamera 3D">
+                    <i class="fa-solid fa-video"></i>
+                </button>
+                <button id="btn-toggle-log" class="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 backdrop-blur-md border border-slate-700/80 text-slate-200 transition sm:hidden" title="Riwayat">
+                    <i class="fa-solid fa-list-ul"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Bagian Tengah Kanan: Log Aktivitas -->
+        <div id="log-panel" class="hidden sm:flex flex-col w-72 max-h-64 bg-slate-900/75 backdrop-blur-md border border-slate-700/70 rounded-2xl p-3 pointer-events-auto self-end my-auto">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-clock-rotate-left text-emerald-400"></i> Kabar Sidoarjo
+            </div>
+            <div id="game-logs" class="flex-1 overflow-y-auto space-y-1.5 text-xs pr-1">
+                <!-- Log masuk di sini -->
+            </div>
+        </div>
+
+        <!-- Bagian Bawah: Kontrol Giliran & Aksi -->
+        <div class="flex flex-col items-center gap-3 pointer-events-auto mb-1">
+            
+            <!-- Banner Status Giliran -->
+            <div id="turn-banner" class="bg-slate-900/90 backdrop-blur-md border border-slate-700 px-5 py-2 rounded-full text-sm font-bold shadow-xl flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <span id="turn-text">Menunggu giliran...</span>
+            </div>
+
+            <!-- Panel Aksi Utama -->
+            <div class="bg-slate-900/90 backdrop-blur-md border border-slate-700/90 p-3 rounded-2xl shadow-2xl flex items-center gap-3">
+                <!-- Tampilan Dadu -->
+                <div class="flex items-center gap-2 bg-slate-800 px-3 py-2 rounded-xl border border-slate-700">
+                    <div id="dice-1" class="w-9 h-9 rounded-lg bg-white text-slate-900 font-black text-xl flex items-center justify-center shadow-inner">?</div>
+                    <div id="dice-2" class="w-9 h-9 rounded-lg bg-white text-slate-900 font-black text-xl flex items-center justify-center shadow-inner">?</div>
+                </div>
+
+                <!-- Tombol Kocok Dadu -->
+                <button id="btn-roll-dice" disabled class="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 disabled:from-slate-700 disabled:to-slate-700 disabled:text-slate-500 text-white font-black tracking-wide shadow-lg transition transform active:scale-95 flex items-center gap-2">
+                    <i class="fa-solid fa-dice text-lg"></i> KOCOK DADU
+                </button>
+
+                <!-- Tombol Akhiri Giliran -->
+                <button id="btn-end-turn" class="hidden px-5 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold shadow-lg transition transform active:scale-95">
+                    Selesai <i class="fa-solid fa-forward-step ml-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Pembelian Properti / Aksi Petak -->
+    <div id="action-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
+        <div class="bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden transform transition-all">
+            <!-- Header Warna Komplek -->
+            <div id="modal-header-color" class="h-4 w-full bg-emerald-500"></div>
+            
+            <div class="p-6 text-center">
+                <span id="modal-tile-type" class="text-[11px] font-bold uppercase tracking-widest text-slate-400">KECAMATAN / DESA</span>
+                <h3 id="modal-tile-name" class="text-2xl font-black text-white mt-1">Nama Wilayah</h3>
+                <p id="modal-tile-desc" class="text-sm text-slate-300 mt-3 leading-relaxed">Deskripsi atau detail biaya.</p>
+                
+                <div id="modal-price-box" class="mt-4 bg-slate-900/80 rounded-xl p-3 border border-slate-700/80 flex justify-around">
+                    <div>
+                        <div class="text-[10px] text-slate-400 uppercase">Harga Beli</div>
+                        <div id="modal-buy-price" class="text-base font-bold text-emerald-400">Rp 0</div>
+                    </div>
+                    <div class="border-l border-slate-700"></div>
+                    <div>
+                        <div class="text-[10px] text-slate-400 uppercase">Biaya Sewa</div>
+                        <div id="modal-rent-price" class="text-base font-bold text-amber-400">Rp 0</div>
+                    </div>
+                </div>
+
+                <!-- Tombol Aksi Modal -->
+                <div id="modal-buttons" class="mt-6 flex gap-3">
+                    <button id="btn-modal-skip" class="w-1/2 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold transition">
+                        Lewati
+                    </button>
+                    <button id="btn-modal-buy" class="w-1/2 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg transition">
+                        Beli Wilayah
+                    </button>
+                </div>
+                <button id="btn-modal-ok" class="hidden w-full mt-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg transition">
+                    Mengerti
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification (Pengganti alert) -->
+    <div id="toast-container" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Script Utama: Firebase Multiplayer & Three.js 3D Engine -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ==========================================
+        // 1. KONFIGURASI DATA WILAYAH SIDOARJO (24 PETAK)
+        // ==========================================
+        // Papan berbentuk persegi 7x7 (24 petak keliling: indeks 0 sampai 23)
+        const BOARD_TILES = [
+            { id: 0, name: "ALUN-ALUN SIDOARJO", sub: "START", type: "start", color: "#10b981", price: 0, rent: 0, desc: "Titik awal perjalanan! Lewati petak ini untuk mendapat bonus Rp 2.000.000 dari Pemkab." },
+            { id: 1, name: "DESA KEDUNGPELUK", sub: "Kec. Candi", type: "property", group: "coklat", color: "#92400e", price: 600000, rent: 60000 },
+            { id: 2, name: "DESA BLURU KIDUL", sub: "Kec. Sidoarjo", type: "property", group: "coklat", color: "#92400e", price: 800000, rent: 80000 },
+            { id: 3, name: "DANA UMUM", sub: "Bantuan Sosial", type: "chance", color: "#3b82f6", price: 0, rent: 0, desc: "Ambil kartu keberuntungan warga Sidoarjo!" },
+            { id: 4, name: "STASIUN SIDOARJO", sub: "Transportasi", type: "station", color: "#475569", price: 1500000, rent: 250000 },
+            { id: 5, name: "DESA PORONG", sub: "Kec. Porong", type: "property", group: "biru_muda", color: "#0ea5e9", price: 1000000, rent: 100000 },
+            
+            { id: 6, name: "LUMPUR LAPINDO", sub: "Zona Tanggul", type: "jail", color: "#f97316", price: 0, rent: 0, desc: "Hanya lewat melihat tanggul lumpur Porong. Aman!" },
+            { id: 7, name: "DESA TANGGULANGIN", sub: "Sentra Tas & Kulit", type: "property", group: "biru_muda", color: "#0ea5e9", price: 1200000, rent: 120000 },
+            { id: 8, name: "DESA KEDENSARI", sub: "Kec. Tanggulangin", type: "property", group: "biru_muda", color: "#0ea5e9", price: 1200000, rent: 130000 },
+            { id: 9, name: "PAJAK TAMBAK", sub: "Retribusi Bandeng", type: "tax", color: "#ef4444", price: 0, rent: 1000000, desc: "Bayar pajak hasil tambak bandeng & udang sebesar Rp 1.000.000." },
+            { id: 10, name: "DESA KRIAN", sub: "Kec. Krian", type: "property", group: "pink", color: "#ec4899", price: 1400000, rent: 150000 },
+            { id: 11, name: "DESA BARENGKRAJAN", sub: "Kec. Krian", type: "property", group: "pink", color: "#ec4899", price: 1600000, rent: 170000 },
+
+            { id: 12, name: "GOR DELTA SIDOARJO", sub: "Parkir Bebas", type: "free", color: "#eab308", price: 0, rent: 0, desc: "Istirahat sejenak menikmati kuliner & olahraga di kawasan GOR Delta." },
+            { id: 13, name: "DESA SEPANJANG", sub: "Kec. Taman", type: "property", group: "oranye", color: "#f97316", price: 1800000, rent: 200000 },
+            { id: 14, name: "DESA GELURAN", sub: "Kec. Taman", type: "property", group: "oranye", color: "#f97316", price: 2000000, rent: 220000 },
+            { id: 15, name: "KESEMPATAN", sub: "Info Delta", type: "chance", color: "#8b5cf6", price: 0, rent: 0, desc: "Kejutan dari Kabupaten Sidoarjo!" },
+            { id: 16, name: "BANDARA JUANDA", sub: "Kec. Sedati", type: "station", color: "#475569", price: 2200000, rent: 350000 },
+            { id: 17, name: "DESA BETRO", sub: "Kec. Sedati", type: "property", group: "merah", color: "#ef4444", price: 2400000, rent: 260000 },
+
+            { id: 18, name: "MACET BUNDARAN WARU", sub: "Terjebak Macet!", type: "gotojail", color: "#dc2626", price: 0, rent: 0, desc: "Terjebak macet parah di Bundaran Waru! Mundur ke Tanggul Lumpur & denda Rp 500.000." },
+            { id: 19, name: "DESA PEPELEGI", sub: "Kec. Waru", type: "property", group: "merah", color: "#ef4444", price: 2600000, rent: 280000 },
+            { id: 20, name: "DESA WADUNGASRI", sub: "Kec. Waru", type: "property", group: "hijau", color: "#16a34a", price: 2800000, rent: 300000 },
+            { id: 21, name: "DESA GEDANGAN", sub: "Kec. Gedangan", type: "property", group: "hijau", color: "#16a34a", price: 3000000, rent: 330000 },
+            { id: 22, name: "DESA BUDURAN", sub: "Kec. Buduran", type: "property", group: "biru_tua", color: "#2563eb", price: 3500000, rent: 400000 },
+            { id: 23, name: "KOTA SIDOARJO", sub: "Pusat Kabupaten", type: "property", group: "biru_tua", color: "#2563eb", price: 4000000, rent: 500000 }
+        ];
+
+        const CHANCE_CARDS = [
+            { text: "Panen Bandeng Asap melimpah! Terima Rp 1.500.000.", money: 1500000 },
+            { text: "Juara Lomba Kerupuk Udang Sidoarjo! Terima Rp 1.000.000.", money: 1000000 },
+            { text: "Perbaikan jalan desa di wilayahmu. Bayar Rp 800.000.", money: -800000 },
+            { text: "Bantuan UMKM Tas Tanggulangin cair! Terima Rp 1.200.000.", money: 1200000 },
+            { text: "Kena tilang di Alun-alun. Bayar denda Rp 500.000.", money: -500000 }
+        ];
+
+        const PLAYER_COLORS = [
+            { name: "Merah", hex: "#ef4444", int: 0xef4444 },
+            { name: "Biru", hex: "#3b82f6", int: 0x3b82f6 },
+            { name: "Kuning", hex: "#eab308", int: 0xeab308 },
+            { name: "Ungu", hex: "#a855f7", int: 0xa855f7 }
+        ];
+
+        // ==========================================
+        // 2. INISIALISASI FIREBASE & MULTIPLAYER STATE
+        // ==========================================
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'monopoli-sidoarjo-3d';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        
+        let app, auth, db;
+        let currentUser = null;
+        let currentRoomCode = null;
+        let unsubscribeRoom = null;
+        let gameState = null;
+        let isRollingLocal = false;
+
+        // Format Rupiah
+        const formatRp = (num) => "Rp " + num.toLocaleString("id-ID");
+
+        // Fungsi Toast Notifikasi
+        function showToast(msg, type = "info") {
+            const container = document.getElementById("toast-container");
+            const el = document.createElement("div");
+            const bg = type === "error" ? "bg-rose-600" : type === "success" ? "bg-emerald-600" : "bg-slate-800 border border-slate-600";
+            el.className = `${bg} text-white px-4 py-2.5 rounded-xl shadow-2xl text-sm font-semibold flex items-center gap-2 transition-all duration-300 transform translate-y-0 opacity-100`;
+            el.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info'}"></i> <span>${msg}</span>`;
+            container.appendChild(el);
+            setTimeout(() => {
+                el.classList.add("opacity-0", "-translate-y-2");
+                setTimeout(() => el.remove(), 300);
+            }, 3000);
+        }
+
+        // Inisialisasi Auth & Firestore
+        async function initFirebase() {
+            if (!firebaseConfig) {
+                document.getElementById("auth-status").innerHTML = `<span class="text-rose-400">Konfigurasi server tidak ditemukan.</span>`;
+                return;
+            }
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUser = user;
+                        document.getElementById("display-userid").innerText = `ID: ${user.uid}`;
+                        document.getElementById("auth-status").innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> <span class="text-emerald-400 font-semibold">Terhubung ke Server Sidoarjo</span>`;
+                        const controls = document.getElementById("lobby-controls");
+                        controls.classList.remove("opacity-50", "pointer-events-none");
+                    }
+                });
+            } catch (err) {
+                console.error("Auth error:", err);
+                document.getElementById("auth-status").innerHTML = `<span class="text-rose-400">Gagal terhubung: ${err.message}</span>`;
+            }
+        }
+
+        // Membuat Kode Room Acak 5 Huruf
+        function generateRoomCode() {
+            const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+            let res = "";
+            for (let i = 0; i < 5; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
+            return res;
+        }
+
+        // Membuat Room Baru
+        async function createRoom() {
+            if (!currentUser) return;
+            const nameInput = document.getElementById("player-name-input").value.trim();
+            const playerName = nameInput || "Juragan_" + currentUser.uid.slice(0, 4);
+            const code = generateRoomCode();
+
+            const initialRoomData = {
+                roomCode: code,
+                status: "waiting", // waiting, playing, finished
+                hostId: currentUser.uid,
+                turnIndex: 0,
+                turnPhase: "roll", // roll, action, end
+                dice: [1, 1],
+                players: [
+                    {
+                        uid: currentUser.uid,
+                        name: playerName,
+                        money: 15000000, // Modal awal 15 Juta
+                        position: 0,
+                        colorIndex: 0,
+                        bankrupt: false
+                    }
+                ],
+                properties: {}, // { tileId: { ownerUid, level } }
+                logs: [`${playerName} membuat room ${code}.`]
+            };
+
+            try {
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
+                await setDoc(roomRef, initialRoomData);
+                subscribeToRoom(code);
+            } catch (e) {
+                showToast("Gagal membuat room: " + e.message, "error");
+            }
+        }
+
+        // Bergabung ke Room
+        async function joinRoom() {
+            if (!currentUser) return;
+            const code = document.getElementById("room-code-input").value.trim().toUpperCase();
+            if (code.length < 4) {
+                showToast("Masukkan kode room yang valid!", "error");
+                return;
+            }
+            const nameInput = document.getElementById("player-name-input").value.trim();
+            const playerName = nameInput || "Warga_" + currentUser.uid.slice(0, 4);
+
+            try {
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
+                const snap = await getDoc(roomRef);
+                if (!snap.exists()) {
+                    showToast("Room tidak ditemukan!", "error");
+                    return;
+                }
+                const data = snap.data();
+                const alreadyIn = data.players.find(p => p.uid === currentUser.uid);
+
+                if (!alreadyIn) {
+                    if (data.status !== "waiting") {
+                        showToast("Permainan sudah dimulai!", "error");
+                        return;
+                    }
+                    if (data.players.length >= 4) {
+                        showToast("Room sudah penuh (Maks 4 pemain)!", "error");
+                        return;
+                    }
+                    const newPlayer = {
+                        uid: currentUser.uid,
+                        name: playerName,
+                        money: 15000000,
+                        position: 0,
+                        colorIndex: data.players.length,
+                        bankrupt: false
+                    };
+                    const updatedPlayers = [...data.players, newPlayer];
+                    const updatedLogs = [`${playerName} bergabung ke room!`, ...data.logs].slice(0, 20);
+                    await updateDoc(roomRef, {
+                        players: updatedPlayers,
+                        logs: updatedLogs
+                    });
+                }
+                subscribeToRoom(code);
+            } catch (e) {
+                showToast("Gagal bergabung: " + e.message, "error");
+            }
+        }
+
+        // Mendengarkan Perubahan State Room secara Real-Time
+        function subscribeToRoom(code) {
+            currentRoomCode = code;
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
+            
+            if (unsubscribeRoom) unsubscribeRoom();
+
+            unsubscribeRoom = onSnapshot(roomRef, (docSnap) => {
+                if (!docSnap.exists()) {
+                    showToast("Room telah ditutup.", "error");
+                    leaveRoomUI();
+                    return;
+                }
+                const prevStatus = gameState ? gameState.status : null;
+                gameState = docSnap.data();
+
+                if (gameState.status === "waiting") {
+                    renderWaitingRoom();
+                } else if (gameState.status === "playing" || gameState.status === "finished") {
+                    if (prevStatus !== "playing") {
+                        document.getElementById("lobby-screen").classList.add("hidden");
+                        document.getElementById("waiting-room-screen").classList.add("hidden");
+                        document.getElementById("game-hud").classList.remove("hidden");
+                        onWindowResize();
+                    }
+                    renderGameHUD();
+                    sync3DBoardState();
+                }
+            }, (error) => {
+                console.error("Snapshot error:", error);
+                showToast("Koneksi terganggu.", "error");
+            });
+        }
+
+        function leaveRoomUI() {
+            if (unsubscribeRoom) unsubscribeRoom();
+            currentRoomCode = null;
+            gameState = null;
+            document.getElementById("waiting-room-screen").classList.add("hidden");
+            document.getElementById("game-hud").classList.add("hidden");
+            document.getElementById("lobby-screen").classList.remove("hidden");
+        }
+
+        // Render UI Ruang Tunggu
+        function renderWaitingRoom() {
+            document.getElementById("lobby-screen").classList.add("hidden");
+            document.getElementById("waiting-room-screen").classList.remove("hidden");
+            document.getElementById("waiting-room-code").innerText = gameState.roomCode;
+
+            const listEl = document.getElementById("waiting-players-list");
+            listEl.innerHTML = "";
+
+            gameState.players.forEach((p, idx) => {
+                const color = PLAYER_COLORS[p.colorIndex];
+                const isHost = p.uid === gameState.hostId;
+                const isMe = p.uid === currentUser.uid;
+                listEl.innerHTML += `
+                    <div class="flex items-center justify-between bg-slate-900/90 border border-slate-700 p-3 rounded-xl">
+                        <div class="flex items-center gap-3">
+                            <span class="w-4 h-4 rounded-full shadow" style="background-color: ${color.hex}"></span>
+                            <span class="font-bold text-white">${p.name} ${isMe ? '<span class="text-xs text-emerald-400">(Kamu)</span>' : ''}</span>
+                        </div>
+                        ${isHost ? '<span class="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded font-bold">HOST</span>' : ''}
+                    </div>
+                `;
+            });
+
+            const btnStart = document.getElementById("btn-start-game");
+            if (currentUser.uid === gameState.hostId) {
+                btnStart.classList.remove("hidden");
+                btnStart.disabled = gameState.players.length < 1; // Bisa dicoba solo atau ramai-ramai
+                btnStart.innerText = gameState.players.length === 1 ? "Mulai (Mode Uji Coba Solo)" : `Mulai (${gameState.players.length} Pemain)`;
+            } else {
+                btnStart.classList.add("hidden");
+            }
+        }
+
+        // Mulai Permainan (Host)
+        async function startGame() {
+            if (!currentRoomCode || gameState.hostId !== currentUser.uid) return;
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomCode);
+            await updateDoc(roomRef, {
+                status: "playing",
+                turnIndex: 0,
+                turnPhase: "roll",
+                logs: ["Permainan dimulai! Selamat membangun Kabupaten Sidoarjo!", ...gameState.logs]
+            });
+        }
+
+        // ==========================================
+        // 3. LOGIKA GAMEPLAY & INTERAKSI GILIRAN
+        // ==========================================
+        function renderGameHUD() {
+            document.getElementById("hud-room-code").innerText = gameState.roomCode;
+
+            // Render Kartu Pemain di Atas
+            const hudEl = document.getElementById("players-hud");
+            hudEl.innerHTML = "";
+            gameState.players.forEach((p, idx) => {
+                const color = PLAYER_COLORS[p.colorIndex];
+                const isTurn = idx === gameState.turnIndex && gameState.status === "playing";
+                const isMe = p.uid === currentUser.uid;
+                hudEl.innerHTML += `
+                    <div class="bg-slate-900/85 backdrop-blur-md border-2 ${isTurn ? 'active-turn-card' : 'border-slate-700/80'} px-3 py-2 rounded-xl flex items-center gap-2.5 transition-all ${p.bankrupt ? 'opacity-40 grayscale' : ''}">
+                        <div class="w-3.5 h-3.5 rounded-full flex-shrink-0" style="background-color: ${color.hex}"></div>
+                        <div>
+                            <div class="text-xs font-bold text-white flex items-center gap-1">
+                                ${p.name} ${isMe ? '<span class="text-[10px] text-emerald-400">(Kamu)</span>' : ''}
+                            </div>
+                            <div class="text-xs font-mono font-semibold text-amber-400">${p.bankrupt ? 'BANGKRUT' : formatRp(p.money)}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Render Log Aktivitas
+            const logEl = document.getElementById("game-logs");
+            logEl.innerHTML = gameState.logs.map(l => `<div class="text-slate-300 border-b border-slate-800/80 pb-1">${l}</div>`).join("");
+
+            // Update Dadu UI
+            if (!isRollingLocal) {
+                document.getElementById("dice-1").innerText = gameState.dice[0];
+                document.getElementById("dice-2").innerText = gameState.dice[1];
+            }
+
+            // Kontrol Giliran
+            const activePlayer = gameState.players[gameState.turnIndex];
+            const isMyTurn = activePlayer && activePlayer.uid === currentUser.uid && gameState.status === "playing";
+            const turnText = document.getElementById("turn-text");
+            const btnRoll = document.getElementById("btn-roll-dice");
+            const btnEnd = document.getElementById("btn-end-turn");
+
+            if (gameState.status === "finished") {
+                const winner = gameState.players.find(p => !p.bankrupt) || activePlayer;
+                turnText.innerHTML = `<span class="text-amber-400">🏆 PEMENANG: ${winner.name}!</span>`;
+                btnRoll.disabled = true;
+                btnEnd.classList.add("hidden");
+                return;
+            }
+
+            if (isMyTurn) {
+                turnText.innerHTML = `<span class="text-emerald-400">Giliran Kamu!</span>`;
+                if (gameState.turnPhase === "roll" && !isRollingLocal) {
+                    btnRoll.disabled = false;
+                    btnEnd.classList.add("hidden");
+                } else if (gameState.turnPhase === "end") {
+                    btnRoll.disabled = true;
+                    btnEnd.classList.remove("hidden");
+                } else {
+                    btnRoll.disabled = true;
+                    btnEnd.classList.add("hidden");
+                }
+            } else {
+                turnText.innerText = `Giliran ${activePlayer ? activePlayer.name : '...'}`;
+                btnRoll.disabled = true;
+                btnEnd.classList.add("hidden");
+            }
+        }
+
+        // Aksi Kocok Dadu
+        async function rollDiceAction() {
+            if (isRollingLocal || !gameState) return;
+            const activePlayer = gameState.players[gameState.turnIndex];
+            if (activePlayer.uid !== currentUser.uid || gameState.turnPhase !== "roll") return;
+
+            isRollingLocal = true;
+            document.getElementById("btn-roll-dice").disabled = true;
+
+            // Animasi kocok dadu di UI & 3D
+            let animCount = 0;
+            const d1Final = Math.floor(Math.random() * 6) + 1;
+            const d2Final = Math.floor(Math.random() * 6) + 1;
+
+            const interval = setInterval(async () => {
+                document.getElementById("dice-1").innerText = Math.floor(Math.random() * 6) + 1;
+                document.getElementById("dice-2").innerText = Math.floor(Math.random() * 6) + 1;
+                animCount++;
+                if (animCount >= 10) {
+                    clearInterval(interval);
+                    document.getElementById("dice-1").innerText = d1Final;
+                    document.getElementById("dice-2").innerText = d2Final;
+                    await processMove(d1Final, d2Final);
+                    isRollingLocal = false;
+                }
+            }, 60);
+        }
+
+        // Proses Perpindahan & Efek Petak
+        async function processMove(d1, d2) {
+            const steps = d1 + d2;
+            const players = JSON.parse(JSON.stringify(gameState.players));
+            const me = players[gameState.turnIndex];
+            const oldPos = me.position;
+            const newPos = (oldPos + steps) % BOARD_TILES.length;
+            
+            let newLogs = [...gameState.logs];
+            newLogs.unshift(`${me.name} mengocok dadu (${d1} + ${d2} = ${steps}) dan maju ke ${BOARD_TILES[newPos].name}.`);
+
+            // Cek melewati Alun-Alun Sidoarjo (START)
+            if (oldPos + steps >= BOARD_TILES.length) {
+                me.money += 2000000;
+                newLogs.unshift(`💰 ${me.name} melewati Alun-Alun Sidoarjo & dapat Rp 2.000.000!`);
+                showToast("Melewati Alun-Alun! +Rp 2.000.000", "success");
+            }
+
+            me.position = newPos;
+            const tile = BOARD_TILES[newPos];
+            let nextPhase = "end";
+
+            // Evaluasi jenis petak
+            if (tile.type === "property" || tile.type === "station") {
+                const propData = gameState.properties[tile.id];
+                if (!propData) {
+                    // Belum ada pemilik -> Tawarkan beli jika uang cukup
+                    if (me.money >= tile.price) {
+                        nextPhase = "action";
+                        openBuyModal(tile);
+                    } else {
+                        newLogs.unshift(`Uang ${me.name} tidak cukup untuk membeli ${tile.name}.`);
+                    }
+                } else if (propData.ownerUid !== me.uid) {
+                    // Milik pemain lain -> Bayar sewa otomatis!
+                    const owner = players.find(p => p.uid === propData.ownerUid);
+                    if (owner && !owner.bankrupt) {
+                        const rentAmount = tile.rent * (propData.level || 1);
+                        me.money -= rentAmount;
+                        owner.money += rentAmount;
+                        newLogs.unshift(`💸 ${me.name} membayar sewa ${formatRp(rentAmount)} ke ${owner.name} di ${tile.name}.`);
+                        showInfoModal(tile, `Wilayah ini milik ${owner.name}. Kamu membayar biaya sewa sebesar ${formatRp(rentAmount)}.`);
+                    }
+                } else {
+                    // Milik sendiri -> Bisa upgrade rumah/bangunan jika mau
+                    const upgradeCost = Math.floor(tile.price * 0.6);
+                    const currentLvl = propData.level || 1;
+                    if (currentLvl < 3 && me.money >= upgradeCost) {
+                        nextPhase = "action";
+                        openUpgradeModal(tile, currentLvl, upgradeCost);
+                    }
+                }
+            } else if (tile.type === "tax") {
+                me.money -= tile.rent;
+                newLogs.unshift(`🧾 ${me.name} membayar Pajak Tambak Rp 1.000.000.`);
+                showInfoModal(tile, tile.desc);
+            } else if (tile.type === "chance") {
+                const card = CHANCE_CARDS[Math.floor(Math.random() * CHANCE_CARDS.length)];
+                me.money += card.money;
+                newLogs.unshift(`🎴 Kartu Sidoarjo (${me.name}): ${card.text}`);
+                showInfoModal(tile, card.text);
+            } else if (tile.type === "gotojail") {
+                me.position = 6; // Pindah ke Lumpur Lapindo
+                me.money -= 500000;
+                newLogs.unshift(`🚧 ${me.name} terjebak macet Bundaran Waru! Dialihkan ke Porong & denda Rp 500.000.`);
+                showInfoModal(tile, tile.desc);
+            } else {
+                // Start, Jail (lewat), Free Parking
+                if (tile.id !== 0) showToast(`Singgah di ${tile.name}`);
+            }
+
+            // Cek Kebangkrutan
+            if (me.money < 0) {
+                me.bankrupt = true;
+                me.money = 0;
+                newLogs.unshift(`💥 ${me.name} dinyatakan BANGKRUT!`);
+                showToast(`${me.name} Bangkrut!`, "error");
+            }
+
+            // Cek Kondisi Menang (jika pemain > 1 dan tersisa 1 pemain)
+            const activePlayers = players.filter(p => !p.bankrupt);
+            let newStatus = gameState.status;
+            if (players.length > 1 && activePlayers.length === 1) {
+                newStatus = "finished";
+                newLogs.unshift(`🏆 SELAMAT! ${activePlayers[0].name} menguasai Kabupaten Sidoarjo!`);
+            }
+
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomCode);
+            await updateDoc(roomRef, {
+                dice: [d1, d2],
+                players: players,
+                turnPhase: me.bankrupt ? "end" : nextPhase,
+                status: newStatus,
+                logs: newLogs.slice(0, 25)
+            });
+
+            if (me.bankrupt && newStatus === "playing") {
+                await endTurnAction();
+            }
+        }
+
+        // Modal Pembelian Properti
+        function openBuyModal(tile) {
+            const modal = document.getElementById("action-modal");
+            document.getElementById("modal-header-color").style.backgroundColor = tile.color;
+            document.getElementById("modal-tile-type").innerText = tile.sub;
+            document.getElementById("modal-tile-name").innerText = tile.name;
+            document.getElementById("modal-tile-desc").innerText = "Apakah kamu ingin membeli dan mengelola wilayah ini?";
+            
+            document.getElementById("modal-price-box").classList.remove("hidden");
+            document.getElementById("modal-buy-price").innerText = formatRp(tile.price);
+            document.getElementById("modal-rent-price").innerText = formatRp(tile.rent);
+
+            document.getElementById("modal-buttons").classList.remove("hidden");
+            document.getElementById("btn-modal-ok").classList.add("hidden");
+            
+            const btnBuy = document.getElementById("btn-modal-buy");
+            btnBuy.innerText = "Beli Wilayah";
+            btnBuy.onclick = () => buyPropertyAction(tile);
+
+            modal.classList.remove("hidden");
+        }
+
+        // Modal Upgrade Properti
+        function openUpgradeModal(tile, currentLvl, upgradeCost) {
+            const modal = document.getElementById("action-modal");
+            document.getElementById("modal-header-color").style.backgroundColor = tile.color;
+            document.getElementById("modal-tile-type").innerText = `WILAYAH MILIKMU (LEVEL ${currentLvl})`;
+            document.getElementById("modal-tile-name").innerText = tile.name;
+            document.getElementById("modal-tile-desc").innerText = `Bangun ruko/perumahan di ${tile.name} untuk menaikkan tarif sewa!`;
+            
+            document.getElementById("modal-price-box").classList.remove("hidden");
+            document.getElementById("modal-buy-price").innerText = formatRp(upgradeCost);
+            document.getElementById("modal-rent-price").innerText = formatRp(tile.rent * (currentLvl + 1));
+
+            document.getElementById("modal-buttons").classList.remove("hidden");
+            document.getElementById("btn-modal-ok").classList.add("hidden");
+            
+            const btnBuy = document.getElementById("btn-modal-buy");
+            btnBuy.innerText = "Bangun (+1 Lvl)";
+            btnBuy.onclick = () => upgradePropertyAction(tile, upgradeCost);
+
+            modal.classList.remove("hidden");
+        }
+
+        // Modal Informasi Umum
+        function showInfoModal(tile, message) {
+            const modal = document.getElementById("action-modal");
+            document.getElementById("modal-header-color").style.backgroundColor = tile.color;
+            document.getElementById("modal-tile-type").innerText = tile.sub;
+            document.getElementById("modal-tile-name").innerText = tile.name;
+            document.getElementById("modal-tile-desc").innerText = message;
+            
+            document.getElementById("modal-price-box").classList.add("hidden");
+            document.getElementById("modal-buttons").classList.add("hidden");
+            document.getElementById("btn-modal-ok").classList.remove("hidden");
+
+            modal.classList.remove("hidden");
+        }
+
+        // Eksekusi Beli Properti
+        async function buyPropertyAction(tile) {
+            document.getElementById("action-modal").classList.add("hidden");
+            const players = JSON.parse(JSON.stringify(gameState.players));
+            const me = players[gameState.turnIndex];
+            if (me.money < tile.price) return;
+
+            me.money -= tile.price;
+            const props = { ...gameState.properties };
+            props[tile.id] = {
+                ownerUid: me.uid,
+                colorIndex: me.colorIndex,
+                level: 1
+            };
+
+            const newLogs = [`🏠 ${me.name} resmi membeli ${tile.name} seharga ${formatRp(tile.price)}!`, ...gameState.logs];
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomCode);
+            await updateDoc(roomRef, {
+                players: players,
+                properties: props,
+                turnPhase: "end",
+                logs: newLogs.slice(0, 25)
+            });
+        }
+
+        // Eksekusi Upgrade Properti
+        async function upgradePropertyAction(tile, cost) {
+            document.getElementById("action-modal").classList.add("hidden");
+            const players = JSON.parse(JSON.stringify(gameState.players));
+            const me = players[gameState.turnIndex];
+            if (me.money < cost) return;
+
+            me.money -= cost;
+            const props = { ...gameState.properties };
+            const nextLvl = (props[tile.id].level || 1) + 1;
+            props[tile.id].level = nextLvl;
+
+            const newLogs = [`🏗️ ${me.name} membangun gedung Level ${nextLvl} di ${tile.name}!`, ...gameState.logs];
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomCode);
+            await updateDoc(roomRef, {
+                players: players,
+                properties: props,
+                turnPhase: "end",
+                logs: newLogs.slice(0, 25)
+            });
+        }
+
+        // Lewati Aksi Beli
+        async function skipAction() {
+            document.getElementById("action-modal").classList.add("hidden");
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomCode);
+            await updateDoc(roomRef, {
+                turnPhase: "end"
+            });
+        }
+
+        // Akhiri Giliran & Pindah ke Pemain Berikutnya
+        async function endTurnAction() {
+            if (!gameState) return;
+            const total = gameState.players.length;
+            let nextIdx = (gameState.turnIndex + 1) % total;
+            
+            // Lewati pemain yang sudah bangkrut
+            let loopGuard = 0;
+            while (gameState.players[nextIdx].bankrupt && loopGuard < total) {
+                nextIdx = (nextIdx + 1) % total;
+                loopGuard++;
+            }
+
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomCode);
+            await updateDoc(roomRef, {
+                turnIndex: nextIdx,
+                turnPhase: "roll"
+            });
+        }
+
+        // ==========================================
+        // 4. ENGINE GRAFIS 3D (THREE.JS)
+        // ==========================================
+        let scene, camera, renderer;
+        let boardGroup, pawnsGroup, buildingsGroup;
+        const tileCoordinates = []; // Menyimpan posisi (x, z) setiap petak 0..23
+        const pawnMeshes = {}; // { uid: THREE.Group }
+        const buildingMeshes = {}; // { tileId: THREE.Group }
+
+        // Kontrol Kamera Orbit Manual (Mouse & Touch)
+        let isDragging = false;
+        let prevMouse = { x: 0, y: 0 };
+        let camAngle = { theta: Math.PI / 4, phi: Math.PI / 3.2 };
+        let camRadius = 24;
+
+        function init3D() {
+            const container = document.getElementById("canvas-container");
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a);
+            scene.fog = new THREE.FogExp2(0x0f172a, 0.018);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            updateCameraPosition();
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // Pencahayaan
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+            dirLight.position.set(12, 22, 10);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            scene.add(dirLight);
+
+            boardGroup = new THREE.Group();
+            pawnsGroup = new THREE.Group();
+            buildingsGroup = new THREE.Group();
+            scene.add(boardGroup);
+            scene.add(pawnsGroup);
+            scene.add(buildingsGroup);
+
+            buildSidoarjoBoard3D();
+            setupCameraControls(renderer.domElement);
+
+            window.addEventListener("resize", onWindowResize);
+            animate();
+        }
+
+        // Membuat Tekstur Kanvas untuk Setiap Petak Papan
+        function createTileTexture(tile) {
+            const canvas = document.createElement("canvas");
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext("2d");
+
+            // Dasar kartu petak
+            ctx.fillStyle = "#f8fafc";
+            ctx.fillRect(0, 0, 256, 256);
+
+            // Garis tepi
+            ctx.strokeStyle = "#334155";
+            ctx.lineWidth = 8;
+            ctx.strokeRect(4, 4, 248, 248);
+
+            // Header warna
+            ctx.fillStyle = tile.color;
+            ctx.fillRect(8, 8, 240, 56);
+
+            // Teks Kecamatan / Sub
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 20px Inter, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(tile.sub.toUpperCase(), 128, 43);
+
+            // Nama Desa / Wilayah (Word wrap)
+            ctx.fillStyle = "#0f172a";
+            ctx.font = "900 24px Inter, sans-serif";
+            const words = tile.name.split(" ");
+            let y = 115;
+            words.forEach(w => {
+                ctx.fillText(w, 128, y);
+                y += 30;
+            });
+
+            // Harga jika properti
+            if (tile.price > 0) {
+                ctx.fillStyle = "#059669";
+                ctx.font = "bold 22px Inter, sans-serif";
+                ctx.fillText("Rp " + (tile.price / 1000000).toFixed(1) + " Jt", 128, 225);
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.anisotropy = 4;
+            return tex;
+        }
+
+        // Membuat Tekstur Tengah Papan (Monumen Jayandaru / Logo Sidoarjo)
+        function createCenterBoardTexture() {
+            const canvas = document.createElement("canvas");
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext("2d");
+
+            const grad = ctx.createLinearGradient(0, 0, 512, 512);
+            grad.addColorStop(0, "#064e3b");
+            grad.addColorStop(1, "#0f172a");
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 512, 512);
+
+            // Ornamen garis emas
+            ctx.strokeStyle = "#fbbf24";
+            ctx.lineWidth = 10;
+            ctx.strokeRect(24, 24, 464, 464);
+
+            ctx.fillStyle = "#fbbf24";
+            ctx.font = "900 44px Inter, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("MONOPOLI 3D", 256, 210);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "900 54px Inter, sans-serif";
+            ctx.fillText("SIDOARJO", 256, 275);
+
+            ctx.fillStyle = "#6ee7b7";
+            ctx.font = "bold 22px Inter, sans-serif";
+            ctx.fillText("KABUPATEN DELTA • JAWA TIMUR", 256, 330);
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // Membangun Papan 3D 7x7 (24 Petak Keliling)
+        function buildSidoarjoBoard3D() {
+            const tileSize = 2.2;
+            const gridSpan = 6; // Indeks 0..6 (7 petak per sisi)
+            const offset = (gridSpan * tileSize) / 2;
+
+            // Alas Utama Papan
+            const baseGeo = new THREE.BoxGeometry(16.2, 0.6, 16.2);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
+            const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+            baseMesh.position.y = -0.35;
+            baseMesh.receiveShadow = true;
+            boardGroup.add(baseMesh);
+
+            // Area Tengah Papan
+            const centerGeo = new THREE.PlaneGeometry(10.8, 10.8);
+            const centerMat = new THREE.MeshStandardMaterial({ map: createCenterBoardTexture(), roughness: 0.5 });
+            const centerMesh = new THREE.Mesh(centerGeo, centerMat);
+            centerMesh.rotation.x = -Math.PI / 2;
+            centerMesh.position.y = 0.02;
+            centerMesh.receiveShadow = true;
+            boardGroup.add(centerMesh);
+
+            // Monumen Miniatur Udang & Bandeng (Ikon Sidoarjo) di Tengah Papan
+            buildSidoarjoMonument();
+
+            // Menghitung koordinat 24 petak mengelilingi papan
+            // Bawah: 0..6 (kanan ke kiri)
+            // Kiri: 7..11 (bawah ke atas)
+            // Atas: 12..18 (kiri ke kanan)
+            // Kanan: 19..23 (atas ke bawah)
+            const coords = [];
+            for (let i = 0; i <= 6; i++) coords.push({ x: offset - i * tileSize, z: offset }); // 0..6
+            for (let i = 1; i <= 5; i++) coords.push({ x: -offset, z: offset - i * tileSize }); // 7..11
+            for (let i = 0; i <= 6; i++) coords.push({ x: -offset + i * tileSize, z: -offset }); // 12..18
+            for (let i = 1; i <= 5; i++) coords.push({ x: offset, z: -offset + i * tileSize }); // 19..23
+
+            BOARD_TILES.forEach((tile, index) => {
+                const pos = coords[index];
+                tileCoordinates.push(pos);
+
+                const geo = new THREE.BoxGeometry(tileSize * 0.96, 0.2, tileSize * 0.96);
+                const topMat = new THREE.MeshStandardMaterial({ map: createTileTexture(tile), roughness: 0.4 });
+                const sideMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1 });
+                
+                const mesh = new THREE.Mesh(geo, [sideMat, sideMat, topMat, sideMat, sideMat, sideMat]);
+                mesh.position.set(pos.x, 0.05, pos.z);
+                mesh.receiveShadow = true;
+                boardGroup.add(mesh);
+            });
+        }
+
+        // Membuat Tugu Monumen Jayandaru Mini di Tengah Papan
+        function buildSidoarjoMonument() {
+            const monGroup = new THREE.Group();
+            
+            // Pedestal Emas
+            const pedGeo = new THREE.CylinderGeometry(1.1, 1.4, 0.4, 16);
+            const goldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.6, roughness: 0.3 });
+            const ped = new THREE.Mesh(pedGeo, goldMat);
+            ped.position.y = 0.2;
+            ped.castShadow = true;
+            monGroup.add(ped);
+
+            // Pilar Utama
+            const pillarGeo = new THREE.CylinderGeometry(0.35, 0.6, 2.2, 12);
+            const pillar = new THREE.Mesh(pillarGeo, goldMat);
+            pillar.position.y = 1.4;
+            pillar.castShadow = true;
+            monGroup.add(pillar);
+
+            // Puncak Kristal Hijau Delta
+            const topGeo = new THREE.OctahedronGeometry(0.65);
+            const emeraldMat = new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x047857, metalness: 0.4, roughness: 0.2 });
+            const topCrystal = new THREE.Mesh(topGeo, emeraldMat);
+            topCrystal.position.y = 2.9;
+            topCrystal.castShadow = true;
+            monGroup.add(topCrystal);
+
+            monGroup.userData.crystal = topCrystal;
+            boardGroup.add(monGroup);
+            boardGroup.userData.monument = monGroup;
+        }
+
+        // Membuat Pion Pemain 3D
+        function createPlayerPawn3D(colorInt) {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({ color: colorInt, roughness: 0.3, metalness: 0.2 });
+
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.42, 0.2, 16), mat);
+            base.position.y = 0.1;
+            base.castShadow = true;
+
+            const body = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.85, 16), mat);
+            body.position.y = 0.55;
+            body.castShadow = true;
+
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 16), mat);
+            head.position.y = 1.05;
+            head.castShadow = true;
+
+            group.add(base, body, head);
+            return group;
+        }
+
+        // Membuat Rumah / Gedung Kepemilikan 3D di atas Petak
+        function createBuilding3D(colorInt, level) {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({ color: colorInt, roughness: 0.4 });
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+
+            for (let i = 0; i < level; i++) {
+                const height = level === 3 ? 0.85 : 0.45;
+                const house = new THREE.Mesh(new THREE.BoxGeometry(0.45, height, 0.45), mat);
+                house.position.set((i - (level - 1) / 2) * 0.52, height / 2 + 0.15, 0);
+                house.castShadow = true;
+
+                const roof = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.3, 4), roofMat);
+                roof.position.set(house.position.x, height + 0.3, 0);
+                roof.rotation.y = Math.PI / 4;
+                roof.castShadow = true;
+
+                group.add(house, roof);
+            }
+            return group;
+        }
+
+        // Sinkronisasi Pion & Bangunan 3D dengan State Multiplayer
+        function sync3DBoardState() {
+            if (!gameState) return;
+
+            // 1. Update Posisi Pion Pemain
+            gameState.players.forEach((p, idx) => {
+                if (p.bankrupt) {
+                    if (pawnMeshes[p.uid]) {
+                        pawnsGroup.remove(pawnMeshes[p.uid]);
+                        delete pawnMeshes[p.uid];
+                    }
+                    return;
+                }
+
+                if (!pawnMeshes[p.uid]) {
+                    const colorInt = PLAYER_COLORS[p.colorIndex].int;
+                    const pawn = createPlayerPawn3D(colorInt);
+                    pawnsGroup.add(pawn);
+                    pawnMeshes[p.uid] = pawn;
+                }
+
+                const tilePos = tileCoordinates[p.position];
+                // Offset kecil agar pion tidak bertumpuk di petak yang sama
+                const offsetX = (idx % 2 === 0 ? -0.42 : 0.42);
+                const offsetZ = (idx < 2 ? -0.42 : 0.42);
+
+                pawnMeshes[p.uid].userData.targetPos = new THREE.Vector3(
+                    tilePos.x + offsetX,
+                    0.15,
+                    tilePos.z + offsetZ
+                );
+            });
+
+            // 2. Update Bangunan Kepemilikan Properti
+            Object.keys(gameState.properties).forEach((tileIdStr) => {
+                const tileId = parseInt(tileIdStr);
+                const prop = gameState.properties[tileId];
+                const key = `${tileId}_${prop.level}`;
+
+                if (!buildingMeshes[key]) {
+                    // Hapus bangunan level sebelumnya jika ada
+                    Object.keys(buildingMeshes).forEach(k => {
+                        if (k.startsWith(`${tileId}_`)) {
+                            buildingsGroup.remove(buildingMeshes[k]);
+                            delete buildingMeshes[k];
+                        }
+                    });
+
+                    const colorInt = PLAYER_COLORS[prop.colorIndex].int;
+                    const bMesh = createBuilding3D(colorInt, prop.level || 1);
+                    const tilePos = tileCoordinates[tileId];
+                    bMesh.position.set(tilePos.x, 0, tilePos.z);
+                    buildingsGroup.add(bMesh);
+                    buildingMeshes[key] = bMesh;
+                }
+            });
+        }
+
+        // Kontrol Kamera Sentuh & Mouse
+        function setupCameraControls(domElement) {
+            domElement.addEventListener("mousedown", (e) => {
+                isDragging = true;
+                prevMouse = { x: e.clientX, y: e.clientY };
+            });
+            window.addEventListener("mouseup", () => isDragging = false);
+            window.addEventListener("mousemove", (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - prevMouse.x;
+                const dy = e.clientY - prevMouse.y;
+                camAngle.theta -= dx * 0.007;
+                camAngle.phi = Math.max(0.35, Math.min(Math.PI / 2.2, camAngle.phi - dy * 0.007));
+                prevMouse = { x: e.clientX, y: e.clientY };
+                updateCameraPosition();
+            });
+
+            // Zoom dengan scroll
+            domElement.addEventListener("wheel", (e) => {
+                camRadius = Math.max(14, Math.min(34, camRadius + e.deltaY * 0.01));
+                updateCameraPosition();
+            }, { passive: true });
+
+            // Dukungan layar sentuh (Touch)
+            domElement.addEventListener("touchstart", (e) => {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            }, { passive: true });
+            window.addEventListener("touchend", () => isDragging = false);
+            window.addEventListener("touchmove", (e) => {
+                if (!isDragging || e.touches.length !== 1) return;
+                const dx = e.touches[0].clientX - prevMouse.x;
+                const dy = e.touches[0].clientY - prevMouse.y;
+                camAngle.theta -= dx * 0.008;
+                camAngle.phi = Math.max(0.35, Math.min(Math.PI / 2.2, camAngle.phi - dy * 0.008));
+                prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                updateCameraPosition();
+            }, { passive: true });
+        }
+
+        function updateCameraPosition() {
+            camera.position.x = camRadius * Math.sin(camAngle.phi) * Math.cos(camAngle.theta);
+            camera.position.y = camRadius * Math.cos(camAngle.phi);
+            camera.position.z = camRadius * Math.sin(camAngle.phi) * Math.sin(camAngle.theta);
+            camera.lookAt(0, 0, 0);
+        }
+
+        function onWindowResize() {
+            if (!camera || !renderer) return;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Loop Animasi 60fps
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Animasi rotasi kristal monumen Sidoarjo
+            if (boardGroup && boardGroup.userData.monument) {
+                boardGroup.userData.monument.userData.crystal.rotation.y += 0.015;
+            }
+
+            // Animasi pergerakan halus pion menuju petak tujuan
+            Object.values(pawnMeshes).forEach(pawn => {
+                if (pawn.userData.targetPos) {
+                    pawn.position.lerp(pawn.userData.targetPos, 0.12);
+                    // Efek melompat kecil saat berpindah
+                    const dist = pawn.position.distanceTo(pawn.userData.targetPos);
+                    if (dist > 0.05) {
+                        pawn.position.y = 0.15 + Math.sin(dist * Math.PI) * 0.6;
+                    } else {
+                        pawn.position.y = 0.15;
+                    }
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        // ==========================================
+        // 5. EVENT LISTENERS TOMBOL UI
+        // ==========================================
+        document.getElementById("btn-create-room").addEventListener("click", createRoom);
+        document.getElementById("btn-join-room").addEventListener("click", joinRoom);
+        document.getElementById("btn-start-game").addEventListener("click", startGame);
+        document.getElementById("btn-leave-room").addEventListener("click", leaveRoomUI);
+        
+        document.getElementById("btn-copy-code").addEventListener("click", () => {
+            const code = document.getElementById("waiting-room-code").innerText;
+            const temp = document.createElement("textarea");
+            temp.value = code;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand("copy");
+            document.body.removeChild(temp);
+            showToast("Kode room berhasil disalin: " + code, "success");
+        });
+
+        document.getElementById("btn-roll-dice").addEventListener("click", rollDiceAction);
+        document.getElementById("btn-end-turn").addEventListener("click", endTurnAction);
+        document.getElementById("btn-modal-skip").addEventListener("click", skipAction);
+        document.getElementById("btn-modal-ok").addEventListener("click", () => {
+            document.getElementById("action-modal").classList.add("hidden");
+        });
+
+        document.getElementById("btn-reset-cam").addEventListener("click", () => {
+            camAngle = { theta: Math.PI / 4, phi: Math.PI / 3.2 };
+            camRadius = 24;
+            updateCameraPosition();
+        });
+
+        document.getElementById("btn-toggle-log").addEventListener("click", () => {
+            const panel = document.getElementById("log-panel");
+            panel.classList.toggle("hidden");
+            panel.classList.toggle("flex");
+        });
+
+        // Jalankan saat halaman dimuat
+        window.onload = () => {
+            init3D();
+            initFirebase();
+        };
+    </script>
+</body>
+</html>
