@@ -1,5 +1,5 @@
 // Service Worker untuk Monopoli 3D Sidoarjo PWA
-const CACHE_NAME = 'monopoli-sidoarjo-v2';
+const CACHE_NAME = 'monopoli-sidoarjo-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
