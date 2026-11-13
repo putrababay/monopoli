@@ -90,7 +90,7 @@
             box-sizing: border-box;
             padding: 4px;
         }
-        /* Penempatan 6 Sisi Kubus 44px (translateZ 22px) / 52px (translateZ 26px) */
+        /* Penempatan 6 Sisi Kubus 44px / 52px */
         .face-1 { transform: rotateY(0deg) translateZ(22px); }
         .face-2 { transform: rotateX(180deg) translateZ(22px); }
         .face-3 { transform: rotateY(-90deg) translateZ(22px); }
@@ -107,7 +107,7 @@
             .face-6 { transform: rotateX(90deg) translateZ(26px); }
         }
 
-        /* Titik (Pips) Dadu */
+        /* Titik Dadu */
         .pip {
             display: block;
             width: 7px;
@@ -124,7 +124,6 @@
             height: 11px;
         }
 
-        /* Layout Grid Pip 1..6 */
         .face-1 { display: flex; align-items: center; justify-content: center; }
         .face-2 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
         .face-2 .pip:nth-child(1) { grid-column: 1; grid-row: 1; }
@@ -142,7 +141,6 @@
         .face-5 .pip:nth-child(5) { grid-column: 3; grid-row: 3; }
         .face-6 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr 1fr; }
 
-        /* Animasi Kocokan Dadu */
         @keyframes dice-tumble {
             0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(0.9); }
             20% { transform: rotateX(240deg) rotateY(180deg) rotateZ(45deg) scale(1.15) translateY(-14px); }
@@ -167,7 +165,7 @@
         }
 
         /* ==========================================
-           2. 3D TACTILE PUSH BUTTON UNTUK DADU
+           2. 3D TACTILE PUSH BUTTON & PROGRESS BAR
            ========================================== */
         .btn-push-dice {
             background: linear-gradient(180deg, #10b981 0%, #059669 100%);
@@ -187,9 +185,18 @@
             background: #334155 !important;
             border-color: #475569 !important;
             box-shadow: 0 4px 0 #1e293b !important;
-            opacity: 0.6;
+            opacity: 0.55;
             cursor: not-allowed;
             transform: none !important;
+        }
+
+        /* Efek Berdenyut saat Progress Penuh */
+        @keyframes pulse-power {
+            0%, 100% { box-shadow: 0 0 10px #ef4444; }
+            50% { box-shadow: 0 0 22px #ef4444; }
+        }
+        .max-power {
+            animation: pulse-power 0.4s infinite;
         }
 
         /* ==========================================
@@ -224,7 +231,6 @@
             border-color: #d8b4fe;
         }
 
-        /* Animasi Transaksi Uang Melayang (+/- Rp ...) */
         @keyframes float-money-up {
             0% { opacity: 0; transform: translate(-50%, 15px) scale(0.85); }
             20% { opacity: 1; transform: translate(-50%, -5px) scale(1.1); }
@@ -241,7 +247,7 @@
         }
 
         /* ==========================================
-           4. KARTU KARAKTER & DOCK DESA TERBELI
+           4. KARTU KARAKTER & DOCK WILAYAH
            ========================================== */
         .character-card {
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -253,7 +259,6 @@
             box-shadow: 0 0 16px rgba(245, 158, 11, 0.4);
         }
 
-        /* Efek Giliran Aktif */
         @keyframes pulse-glow {
             0%, 100% { box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
             50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.95); }
@@ -263,7 +268,6 @@
             border-color: #3b82f6 !important;
         }
 
-        /* Pop-in Bounce */
         @keyframes popup-bounce {
             0% { transform: scale(0.5); opacity: 0; }
             60% { transform: scale(1.06); opacity: 1; }
@@ -274,7 +278,6 @@
             animation: popup-bounce 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); }
         ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.4); border-radius: 4px; }
@@ -302,7 +305,7 @@
                 <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center justify-center gap-2">
                     MONOPOLI 3D SIDOARJO
                 </h1>
-                <p class="text-slate-400 text-xs sm:text-sm mt-0.5">Edisi Desa & Kecamatan • Musik, Suara & Online Multiplayer</p>
+                <p class="text-slate-400 text-xs sm:text-sm mt-0.5">Edisi Desa & Kecamatan • Fitur Ambil Alih Aset & Hotel Delta</p>
                 
                 <div class="flex flex-wrap items-center justify-center gap-2 mt-2">
                     <div id="server-status-pill" class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
@@ -310,7 +313,7 @@
                         <span id="server-status-text">Server WebRTC Aktif</span>
                     </div>
 
-                    <!-- Tombol Pasang PWA di Mobile -->
+                    <!-- Tombol Pasang PWA -->
                     <button id="btn-install-pwa" class="hidden inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition">
                         <i class="fa-solid fa-mobile-screen-button"></i> Pasang Aplikasi (PWA)
                     </button>
@@ -327,7 +330,6 @@
                         class="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 transition font-semibold text-sm">
                 </div>
 
-                <!-- Pilihan Karakter Khas Sidoarjo -->
                 <div>
                     <div class="flex items-center justify-between mb-1.5">
                         <label class="text-xs font-bold uppercase tracking-wider text-slate-300">
@@ -336,12 +338,10 @@
                         <span id="selected-character-name" class="text-xs font-bold text-amber-400">Cak Budi (Sultan)</span>
                     </div>
 
-                    <div id="character-selector-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        <!-- Kartu-kartu karakter diisi JS -->
-                    </div>
+                    <div id="character-selector-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
                 </div>
 
-                <!-- Bagian 2: Mode Permainan (Lokal Cepat / Bot vs Multiplayer Online) -->
+                <!-- Bagian 2: Mode Permainan (Lokal vs Multiplayer Online) -->
                 <div class="pt-1">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <!-- Mode 1: Main Cepat Lokal / Lawan Bot -->
@@ -450,9 +450,7 @@
         <div class="flex flex-col sm:flex-row justify-between items-start gap-2">
             
             <!-- Kartu Pemain di Sisi Kiri (Scrollable Horizontal di Ponsel) -->
-            <div id="players-hud" class="flex gap-1.5 sm:gap-2 pointer-events-auto max-w-full overflow-x-auto pb-1">
-                <!-- Di-render dinamis -->
-            </div>
+            <div id="players-hud" class="flex gap-1.5 sm:gap-2 pointer-events-auto max-w-full overflow-x-auto pb-1"></div>
 
             <!-- Kontrol Kanan Atas: Saldo Kas, BGM, Suara & View Kamera -->
             <div class="flex items-center gap-1.5 sm:gap-2 pointer-events-auto self-end sm:self-start">
@@ -498,7 +496,7 @@
             <i class="fa-solid fa-landmark"></i> <span>Desa Terjual (<span id="mobile-owned-count">0</span>)</span>
         </button>
 
-        <!-- Dock Card Desa Terbeli di Sisi Kanan / Bawah -->
+        <!-- Dock Card Desa Terbeli di Sisi Kanan Desktop -->
         <div id="outer-properties-dock" class="hidden sm:flex flex-col w-64 max-h-[50vh] bg-slate-900/85 backdrop-blur-md border border-slate-700/80 rounded-2xl p-2.5 pointer-events-auto self-end shadow-2xl my-auto transition-all">
             <div class="flex items-center justify-between pb-1.5 border-b border-slate-800 text-xs">
                 <span class="font-bold text-amber-400 flex items-center gap-1.5">
@@ -530,7 +528,7 @@
         </div>
 
         <!-- ==========================================
-             BAGIAN BAWAH: BANNER & PUSH BUTTON DADU
+             BAGIAN BAWAH: PROGRESS BAR & PUSH BUTTON DADU
              ========================================== -->
         <div class="flex flex-col items-center gap-2 pointer-events-auto mb-1">
             
@@ -540,11 +538,11 @@
                 <span id="turn-text" class="text-white">Memuat giliran...</span>
             </div>
 
-            <!-- Baki Dadu & 3D Tactile Push Button -->
-            <div class="bg-slate-900/95 backdrop-blur-md border border-slate-700/90 p-2 sm:p-3 rounded-2xl sm:rounded-3xl shadow-2xl flex items-center gap-2.5 sm:gap-3.5">
+            <!-- Baki Dadu, Progress Bar Daya & 3D Tactile Push Button -->
+            <div class="bg-slate-900/95 backdrop-blur-md border border-slate-700/90 p-2.5 sm:p-3.5 rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col sm:flex-row items-center gap-3">
                 
                 <!-- Baki Dadu 3D CSS -->
-                <div id="dice-tray" class="flex items-center gap-2 bg-slate-950/80 p-1.5 sm:p-2 rounded-xl sm:rounded-2xl border border-slate-800 shadow-inner" title="Klik dadu untuk mengocok!">
+                <div id="dice-tray" class="flex items-center gap-2 bg-slate-950/80 p-1.5 sm:p-2 rounded-xl sm:rounded-2xl border border-slate-800 shadow-inner" title="Tekan & tahan untuk mengocok!">
                     <div class="dice-scene" id="dice-click-1">
                         <div id="cube-1" class="dice-cube">
                             <div class="dice-face face-1"><span class="pip pip-center-red"></span></div>
@@ -568,14 +566,26 @@
                     </div>
                 </div>
 
-                <!-- 3D PUSH BUTTON UNTUK DADU (ACAK CRYPTO) -->
-                <button id="btn-roll-dice" disabled class="btn-push-dice px-5 sm:px-7 py-3 sm:py-3.5 text-white font-black tracking-wider flex items-center justify-center gap-2 text-sm sm:text-base">
-                    <i class="fa-solid fa-dice text-lg sm:text-xl text-amber-300"></i>
-                    <span>KOCOK DADU</span>
-                </button>
+                <!-- Bagian Push Button & Progress Bar Daya Lemparan -->
+                <div class="flex flex-col items-center w-full sm:w-auto">
+                    <!-- Progress Bar Daya Pengocok Dadu -->
+                    <div class="w-full max-w-[240px] bg-slate-950/90 rounded-full h-2.5 sm:h-3 border border-slate-700/80 p-0.5 shadow-inner overflow-hidden mb-1">
+                        <div id="dice-charge-bar" class="h-full bg-gradient-to-r from-emerald-500 via-amber-400 to-rose-500 rounded-full transition-all duration-75" style="width: 0%"></div>
+                    </div>
+                    <div class="flex items-center justify-between w-full max-w-[240px] text-[9px] text-slate-400 font-bold px-1 mb-1.5">
+                        <span id="dice-charge-status">Tekan & Tahan untuk Daya</span>
+                        <span id="dice-charge-pct" class="font-mono text-amber-400">0%</span>
+                    </div>
+
+                    <!-- 3D PUSH BUTTON DADU -->
+                    <button id="btn-roll-dice" disabled class="btn-push-dice px-5 sm:px-7 py-2.5 sm:py-3 text-white font-black tracking-wider flex items-center justify-center gap-2 text-xs sm:text-sm w-full max-w-[240px]">
+                        <i class="fa-solid fa-dice text-base sm:text-lg text-amber-300"></i>
+                        <span>KOCOK DADU</span>
+                    </button>
+                </div>
 
                 <!-- Tombol Akhiri Giliran -->
-                <button id="btn-end-turn" class="hidden px-5 sm:px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-black tracking-wide shadow-lg transition active:scale-95 flex items-center gap-1.5 text-sm">
+                <button id="btn-end-turn" class="hidden px-5 sm:px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-black tracking-wide shadow-lg transition active:scale-95 flex items-center gap-1.5 text-xs sm:text-sm">
                     Selesai <i class="fa-solid fa-arrow-right"></i>
                 </button>
             </div>
@@ -595,9 +605,7 @@
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <div id="mobile-cards-container" class="flex-1 overflow-y-auto space-y-2 mt-3 pr-1 text-xs">
-                <!-- Diisi kartu desa -->
-            </div>
+            <div id="mobile-cards-container" class="flex-1 overflow-y-auto space-y-2 mt-3 pr-1 text-xs"></div>
         </div>
     </div>
 
@@ -691,7 +699,7 @@
     </div>
 
     <!-- ==========================================
-         MODAL PEMBELIAN & AKSI PETAK
+         MODAL PEMBELIAN, UPGRADE & AMBIL ALIH
          ========================================== -->
     <div id="action-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden transform transition-all animate-pop">
@@ -704,7 +712,7 @@
                 
                 <div id="modal-price-box" class="mt-3.5 bg-slate-950/80 rounded-2xl p-2.5 sm:p-3 border border-slate-800 flex justify-around">
                     <div>
-                        <div class="text-[9px] text-slate-400 uppercase">Harga Beli</div>
+                        <div id="modal-price-title" class="text-[9px] text-slate-400 uppercase">Harga Beli</div>
                         <div id="modal-buy-price" class="text-sm sm:text-base font-bold text-emerald-400 font-mono">Rp 0</div>
                     </div>
                     <div class="border-l border-slate-800"></div>
@@ -783,11 +791,9 @@
                 if (this.timer) clearTimeout(this.timer);
             }
 
-            // Memainkan ritme melodi marimba gamelan pelog/slendro santai
             playStep() {
                 if (!this.isPlaying || !this.ctx) return;
 
-                // Tangga nada gamelan pentatonik hangat (C4, D4, E4, G4, A4, C5, D5, E5)
                 const scale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
                 const melodyPattern = [
                     0, 2, 4, 3, 2, 0, 3, 5,
@@ -799,7 +805,6 @@
                 const noteIdx = melodyPattern[this.step % melodyPattern.length];
                 const freq = scale[noteIdx];
 
-                // Not Marimba Lembut
                 if (!this.muted) {
                     const osc = this.ctx.createOscillator();
                     const noteGain = this.ctx.createGain();
@@ -814,7 +819,6 @@
                     osc.start(now);
                     osc.stop(now + 0.3);
 
-                    // Bass lembut pada ketukan 0, 4, 8, 12
                     if (this.step % 4 === 0) {
                         const bassOsc = this.ctx.createOscillator();
                         const bassGain = this.ctx.createGain();
@@ -831,7 +835,6 @@
                 }
 
                 this.step++;
-                // 96 BPM tempo (interval ~156ms)
                 this.timer = setTimeout(() => this.playStep(), 156);
             }
         }
@@ -882,7 +885,43 @@
                 osc.stop(this.ctx.currentTime + 0.05);
             }
 
-            // Suara Kocokan Dadu (7 Hit Beruntun)
+            // Suara Charge Mengisi Daya Dadu (Rising Hum)
+            playChargeStart() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = "triangle";
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(420, now + 1.2);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.linearRampToValueAtTime(0.18, now + 1.2);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 1.3);
+            }
+
+            playChargeRelease() {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(540, now);
+                osc.frequency.exponentialRampToValueAtTime(120, now + 0.12);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.12);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.13);
+            }
+
             playDiceRoll() {
                 if (this.muted) return;
                 this.init();
@@ -1073,7 +1112,7 @@
             {
                 id: "pak_haji",
                 name: "Pak Haji",
-                title: "Saudagar Tanggulangin",
+                title: "Saudagar Kulit Tanggulangin",
                 avatar: "👳",
                 quote: "Kualitas kulit asli, transaksi berkah!",
                 color: { name: "Hijau", hex: "#10b981", int: 0x10b981 },
@@ -1141,15 +1180,20 @@
         let isLocalMode = true;
         let isHost = false;
         let peer = null;
-        let peerConnections = []; // Jika Host, simpan array koneksi
-        let hostConn = null; // Jika Client, koneksi ke Host
+        let peerConnections = [];
+        let hostConn = null;
 
         let isRolling = false;
         let isPawnMoving = false;
         let localPlayerCount = 4;
-        let deferredPrompt = null; // PWA prompt
+        let deferredPrompt = null;
 
-        // Fungsi Toast
+        // Progress Bar Hold-to-Charge Variables
+        let isHoldingDice = false;
+        let holdStartTime = 0;
+        let holdTimer = null;
+        let chargeProgress = 0;
+
         function showToast(msg, type = "info") {
             const container = document.getElementById("toast-container");
             const el = document.createElement("div");
@@ -1185,7 +1229,6 @@
             }, duration);
         }
 
-        // Generate 5-Letter Room Code
         function generateRoomCode() {
             const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
             let res = "";
@@ -1193,15 +1236,9 @@
             return res;
         }
 
-        // ==========================================
-        // WEBRTC MULTIPLAYER HOST / CLIENT SETUP
-        // ==========================================
         function initPeerJS() {
             try {
-                if (typeof Peer === 'undefined') {
-                    console.warn("PeerJS belum termuat.");
-                    return;
-                }
+                if (typeof Peer === 'undefined') return;
                 document.getElementById("display-userid").innerText = `ID: ${currentUser.uid}`;
             } catch (err) {
                 console.warn("PeerJS init error:", err);
@@ -1225,14 +1262,13 @@
             isLocalMode = false;
 
             const peerId = "monopoli_delta_" + code.toLowerCase();
-            showToast(`Membuat room ${code}...`, "info");
+            showToast(`Membuat room online ${code}...`, "info");
 
             try {
                 if (peer) peer.destroy();
                 peer = new Peer(peerId, { debug: 1 });
 
                 peer.on('open', (id) => {
-                    console.log("Host Peer opened with ID:", id);
                     gameState = {
                         roomCode: code,
                         status: "waiting",
@@ -1274,7 +1310,7 @@
                 peer.on('error', (err) => {
                     console.error("PeerJS Host Error:", err);
                     if (err.type === 'unavailable-id') {
-                        createOnlineRoom(); // Coba kode lain
+                        createOnlineRoom();
                     } else {
                         showToast("Koneksi room online gagal: " + err.type, "error");
                     }
@@ -1347,7 +1383,10 @@
             }
         }
 
-        // HOST: Handle Pesan dari Client
+        // =========================================================================
+        // MULTIPLAYER MESSAGE DISPATCHER (HOST <-> CLIENT SYNC)
+        // =========================================================================
+        // HOST: Menangani aksi dari client
         function handleHostIncomingData(conn, msg) {
             if (!gameState) return;
 
@@ -1361,27 +1400,33 @@
                     return;
                 }
                 const newPlayer = msg.player;
-                // Pastikan karakter tidak bentrok jika memungkinkan
-                const updatedPlayers = [...gameState.players, newPlayer];
-                const updatedLogs = [`${newPlayer.name} bergabung ke room!`, ...gameState.logs];
-
-                gameState.players = updatedPlayers;
-                gameState.logs = updatedLogs;
+                gameState.players.push(newPlayer);
+                gameState.logs.unshift(`${newPlayer.name} bergabung ke room!`);
 
                 renderWaitingRoom();
                 broadcastToAllClients({ type: 'STATE_UPDATE', gameState: gameState });
-            } else if (msg.type === 'ACTION_ROLL') {
-                rollDiceAction();
-            } else if (msg.type === 'ACTION_BUY') {
-                executeBuyProperty(msg.tile, msg.player, gameState.logs);
-            } else if (msg.type === 'ACTION_UPGRADE') {
-                executeUpgradeProperty(msg.tile, msg.cost, msg.player, gameState.logs);
-            } else if (msg.type === 'ACTION_END_TURN') {
-                endTurnAction();
+            } else if (msg.type === 'CLIENT_ACTION') {
+                const activePlayer = gameState.players[gameState.turnIndex];
+                if (msg.action === 'ROLL') {
+                    rollDiceAction(msg.power || 75);
+                } else if (msg.action === 'BUY') {
+                    const tile = BOARD_TILES[msg.tileId];
+                    if (tile) executeBuyProperty(tile, activePlayer, gameState.logs);
+                } else if (msg.action === 'UPGRADE') {
+                    const tile = BOARD_TILES[msg.tileId];
+                    if (tile) executeUpgradeProperty(tile, msg.cost, activePlayer, gameState.logs);
+                } else if (msg.action === 'TAKEOVER') {
+                    const tile = BOARD_TILES[msg.tileId];
+                    if (tile) executeTakeoverProperty(tile, msg.cost, activePlayer, gameState.logs);
+                } else if (msg.action === 'SKIP_ACTION') {
+                    updateGameState({ turnPhase: "end" });
+                } else if (msg.action === 'END_TURN') {
+                    endTurnAction();
+                }
             }
         }
 
-        // CLIENT: Handle Data dari Host
+        // CLIENT: Menerima update dari host
         function handleClientIncomingData(msg) {
             if (msg.type === 'STATE_UPDATE') {
                 gameState = msg.gameState;
@@ -1396,12 +1441,44 @@
                     sync3DBoardState();
                     renderOuterPropertyCards();
                 }
+            } else if (msg.type === 'DICE_ROLLED') {
+                // Animasi lemparan dadu & pergerakan pion tersinkron pada client
+                rollDiceWithAnimation(msg.d1, msg.d2, msg.power || 75).then(() => {
+                    const pawn = pawnMeshes[msg.playerUid];
+                    const playerObj = gameState ? gameState.players.find(p => p.uid === msg.playerUid) : null;
+                    if (pawn && playerObj && typeof msg.oldPos === 'number') {
+                        movePawnStepByStep(pawn, msg.oldPos, msg.d1 + msg.d2, playerObj);
+                    }
+                });
+            } else if (msg.type === 'PROMPT_ACTION_MODAL') {
+                if (msg.targetUid === currentUser.uid) {
+                    const tile = BOARD_TILES[msg.tileId];
+                    if (!tile) return;
+                    if (msg.actionType === 'BUY') {
+                        openBuyModal(tile);
+                    } else if (msg.actionType === 'TAKEOVER') {
+                        const prop = (gameState && gameState.properties[msg.tileId]) || { level: msg.propLevel || 1 };
+                        const owner = { name: msg.ownerName || 'Lawan' };
+                        openTakeoverModal(tile, prop, owner, msg.rentPaid, msg.takeoverCost);
+                    } else if (msg.actionType === 'UPGRADE') {
+                        openUpgradeModal(tile, msg.currentLvl, msg.upgradeCost, msg.isNextHotel);
+                    }
+                }
+            } else if (msg.type === 'SHOW_INFO_MODAL') {
+                if (msg.targetUid === currentUser.uid) {
+                    const tile = BOARD_TILES[msg.tileId];
+                    if (tile) showInfoModal(tile, msg.message);
+                }
+            } else if (msg.type === 'EFFECT_OCCUPY') {
+                sound.playOccupy();
+                triggerTerritoryOccupy3DEffect(msg.tileId, msg.colorHex);
+            } else if (msg.type === 'BANNER_EVENT') {
+                showEventBanner(msg.title, msg.message, msg.icon);
             } else if (msg.type === 'ERROR') {
                 showToast(msg.message, "error");
             }
         }
 
-        // Broadcast State ke Semua Client (Host Only)
         function broadcastToAllClients(data) {
             if (!isHost) return;
             peerConnections.forEach(conn => {
@@ -1411,7 +1488,17 @@
             });
         }
 
-        // Start Online Game dari Host
+        function sendActionToHost(actionData) {
+            if (isHost) {
+                // Host langsung eksekusi lokal
+                return false;
+            } else if (hostConn && hostConn.open) {
+                hostConn.send({ type: 'CLIENT_ACTION', ...actionData });
+                return true;
+            }
+            return false;
+        }
+
         function startOnlineGame() {
             if (!isHost || !gameState) return;
             sound.playClick();
@@ -1434,7 +1521,6 @@
             broadcastToAllClients({ type: 'STATE_UPDATE', gameState: gameState });
         }
 
-        // Render UI Waiting Room
         function renderWaitingRoom() {
             document.getElementById("lobby-screen").classList.add("hidden");
             document.getElementById("waiting-room-screen").classList.remove("hidden");
@@ -1597,7 +1683,7 @@
         }
 
         // ==========================================
-        // 6. ANIMASI DADU 3D & TRUE CRYPTO RANDOMNESS
+        // 6. ANIMASI DADU 3D & PROGRESS BAR DAYA
         // ==========================================
         const DICE_ROTATIONS = {
             1: { x: 0, y: 0 },
@@ -1615,7 +1701,6 @@
             cube.style.transform = `rotateX(${rot.x}deg) rotateY(${rot.y}deg)`;
         }
 
-        // KEACAKAN DADU ADIL (MENGGUNAKAN CRYPTOGRAPHIC RANDOM VALUES)
         function getCryptoRandomDice() {
             const buf = new Uint8Array(2);
             if (window.crypto && window.crypto.getRandomValues) {
@@ -1626,13 +1711,46 @@
             }
         }
 
-        async function rollDiceWithAnimation(targetD1, targetD2) {
+        function updateChargeUI(pct, isReleased = false) {
+            const bar = document.getElementById("dice-charge-bar");
+            const labelPct = document.getElementById("dice-charge-pct");
+            const labelStatus = document.getElementById("dice-charge-status");
+            const btnRoll = document.getElementById("btn-roll-dice");
+
+            bar.style.width = pct + "%";
+            labelPct.innerText = pct + "%";
+
+            if (isReleased) {
+                labelStatus.innerText = `LEMPARAN ${pct}% DAYA!`;
+                btnRoll.classList.remove("pushed");
+                setTimeout(() => {
+                    bar.style.width = "0%";
+                    labelPct.innerText = "0%";
+                    labelStatus.innerText = "Tekan & Tahan untuk Daya";
+                }, 1400);
+                return;
+            }
+
+            if (pct >= 95) {
+                labelStatus.innerText = "🔥 DAYA PENUH MAKSIMAL!";
+                bar.classList.add("max-power");
+            } else if (pct >= 50) {
+                labelStatus.innerText = "⚡ Daya Menengah...";
+                bar.classList.remove("max-power");
+            } else if (pct > 0) {
+                labelStatus.innerText = "Mengisi daya lemparan...";
+                bar.classList.remove("max-power");
+            } else {
+                labelStatus.innerText = "Tekan & Tahan untuk Daya";
+                bar.classList.remove("max-power");
+            }
+        }
+
+        async function rollDiceWithAnimation(targetD1, targetD2, power = 75) {
             const tray = document.getElementById("dice-tray");
             const cube1 = document.getElementById("cube-1");
             const cube2 = document.getElementById("cube-2");
-            const btnRoll = document.getElementById("btn-roll-dice");
 
-            btnRoll.classList.add("pushed");
             tray.classList.add("tray-shaking");
             cube1.classList.add("dice-rolling");
             cube2.classList.add("dice-rolling");
@@ -1640,9 +1758,10 @@
 
             if (navigator.vibrate) navigator.vibrate([40, 25, 45]);
 
-            await new Promise(res => setTimeout(res, 1000));
+            // Durasi lemparan menyesuaikan dengan kekuatan charge (800ms s/d 1300ms)
+            const animDuration = 800 + Math.floor((power / 100) * 450);
+            await new Promise(res => setTimeout(res, animDuration));
 
-            btnRoll.classList.remove("pushed");
             tray.classList.remove("tray-shaking");
             cube1.classList.remove("dice-rolling");
             cube2.classList.remove("dice-rolling");
@@ -1659,40 +1778,50 @@
         // ==========================================
         // 7. ANIMASI MELANGKAH DESA DEMI DESA
         // ==========================================
+        // 8. ANIMASI LANGKAH PION DESA KE DESA
+        // ==========================================
         async function movePawnStepByStep(pawnMesh, fromPos, steps, playerObj) {
             isPawnMoving = true;
-            let currentPos = fromPos;
+            try {
+                let currentPos = fromPos;
 
-            for (let s = 1; s <= steps; s++) {
-                const nextPos = (currentPos + 1) % BOARD_TILES.length;
-                const targetCoord = tileCoordinates[nextPos];
+                for (let s = 1; s <= steps; s++) {
+                    const nextPos = (currentPos + 1) % BOARD_TILES.length;
+                    const targetCoord = tileCoordinates[nextPos];
 
-                const playerIdx = gameState.players.findIndex(p => p.uid === playerObj.uid);
-                const offsetX = (playerIdx % 2 === 0 ? -0.4 : 0.4);
-                const offsetZ = (playerIdx < 2 ? -0.4 : 0.4);
-                const finalTarget = new THREE.Vector3(targetCoord.x + offsetX, 0.15, targetCoord.z + offsetZ);
+                    const playerIdx = gameState.players.findIndex(p => p.uid === playerObj.uid);
+                    const offsetX = (playerIdx % 2 === 0 ? -0.4 : 0.4);
+                    const offsetZ = (playerIdx < 2 ? -0.4 : 0.4);
+                    const finalTarget = new THREE.Vector3(targetCoord.x + offsetX, 0.15, targetCoord.z + offsetZ);
 
-                await animateSingleHop(pawnMesh, finalTarget, s);
-                sound.playStep(s);
+                    await animateSingleHop(pawnMesh, finalTarget, s);
+                    sound.playStep(s);
 
-                if (nextPos === 0) {
-                    playerObj.money += 2000000;
-                    sound.playBonusMoney();
-                    showFloatingMoney("+Rp 2.000.000", true);
-                    showToast(`💰 ${playerObj.name} melewati Alun-Alun Sidoarjo & dapat bonus Rp 2.000.000!`, "success");
+                    if (nextPos === 0) {
+                        if (isHost || isLocalMode) {
+                            playerObj.money += 2000000;
+                        }
+                        sound.playBonusMoney();
+                        showFloatingMoney("+Rp 2.000.000", true);
+                        showToast(`💰 ${playerObj.name} melewati Alun-Alun Sidoarjo & dapat bonus Rp 2.000.000!`, "success");
+                    }
+
+                    currentPos = nextPos;
                 }
 
-                currentPos = nextPos;
+                pawnMesh.scale.set(1.2, 0.8, 1.2);
+                await new Promise(res => setTimeout(res, 70));
+                pawnMesh.scale.set(0.9, 1.1, 0.9);
+                await new Promise(res => setTimeout(res, 70));
+                pawnMesh.scale.set(1.0, 1.0, 1.0);
+
+                return currentPos;
+            } catch (err) {
+                console.error("Error in movePawnStepByStep:", err);
+                return (fromPos + steps) % BOARD_TILES.length;
+            } finally {
+                isPawnMoving = false;
             }
-
-            pawnMesh.scale.set(1.2, 0.8, 1.2);
-            await new Promise(res => setTimeout(res, 70));
-            pawnMesh.scale.set(0.9, 1.1, 0.9);
-            await new Promise(res => setTimeout(res, 70));
-            pawnMesh.scale.set(1.0, 1.0, 1.0);
-
-            isPawnMoving = false;
-            return currentPos;
         }
 
         function animateSingleHop(pawnMesh, targetVector, stepNumber) {
@@ -1725,7 +1854,7 @@
         }
 
         // ==========================================
-        // 8. TAMPILAN CARD DESA TERBELI & JUMLAH ASET
+        // 8. TAMPILAN CARD DESA TERBELI & HOTEL DELTA
         // ==========================================
         function renderOuterPropertyCards() {
             const container = document.getElementById("outer-cards-container");
@@ -1758,20 +1887,24 @@
                 const prop = gameState.properties[tileId];
                 const owner = gameState.players.find(p => p.uid === prop.ownerUid);
                 const level = prop.level || 1;
-                const curRent = tile.rent * level;
-                const assetValue = tile.price * level;
+                const isHotel = level === 4;
+
+                const curRent = isHotel ? tile.rent * 5 : tile.rent * level;
+                const assetValue = isHotel ? tile.price * 3.5 : tile.price * level;
                 totalWorldAssets += assetValue;
 
                 const ownerName = owner ? owner.name : "Warga";
                 const ownerAvatar = owner ? owner.avatar : "🏠";
-                const ownerColor = owner ? owner.colorHex : "#10b981";
 
                 cardsHTML += `
-                    <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2 transition hover:border-slate-700 cursor-pointer" onclick="focusCameraOnTile(${tileId})">
+                    <div class="bg-slate-950/80 border ${isHotel ? 'border-amber-400 shadow-md shadow-amber-950/50' : 'border-slate-800'} rounded-xl p-2 transition hover:border-slate-700 cursor-pointer" onclick="focusCameraOnTile(${tileId})">
                         <div class="flex items-center justify-between mb-1">
                             <span class="inline-block w-2.5 h-2.5 rounded-full" style="background-color: ${tile.color}"></span>
-                            <span class="text-[10px] font-bold text-white truncate max-w-[140px]">${tile.name}</span>
-                            <span class="text-[9px] bg-slate-800 text-amber-300 font-mono px-1 rounded">Tk.${level}</span>
+                            <span class="text-[10px] font-bold text-white truncate max-w-[130px]">${tile.name}</span>
+                            ${isHotel ? 
+                                '<span class="text-[9px] bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black px-1.5 py-0.2 rounded shadow">HOTEL</span>' : 
+                                `<span class="text-[9px] bg-slate-800 text-amber-300 font-mono px-1 rounded">Tk.${level}</span>`
+                            }
                         </div>
                         <div class="flex items-center justify-between text-[10px] text-slate-400 mt-0.5">
                             <span class="flex items-center gap-1 text-slate-300">
@@ -1780,7 +1913,7 @@
                             <span class="font-mono text-emerald-400 font-bold">${formatRp(curRent)}</span>
                         </div>
                         <div class="mt-1 pt-1 border-t border-slate-900 flex justify-between text-[9px] text-slate-400">
-                            <span>Nilai Aset:</span>
+                            <span>${isHotel ? '<span class="text-amber-300 font-semibold">Kebal Ambil Alih</span>' : 'Nilai Aset:'}</span>
                             <span class="font-mono text-amber-400 font-semibold">${formatRp(assetValue)}</span>
                         </div>
                     </div>
@@ -1791,7 +1924,6 @@
             mobileContainer.innerHTML = cardsHTML;
         }
 
-        // Fokuskan Kamera ke Tile yang Dipilih dari Card
         window.focusCameraOnTile = function(tileId) {
             const coord = tileCoordinates[tileId];
             if (!coord) return;
@@ -1801,7 +1933,6 @@
             showToast(`Melihat wilayah ${BOARD_TILES[tileId].name}`, "info");
         };
 
-        // Efek Shockwave 3D saat Wilayah Dikuasai
         function triggerTerritoryOccupy3DEffect(tileId, colorHex) {
             const tilePos = tileCoordinates[tileId];
             if (!tilePos) return;
@@ -1838,38 +1969,49 @@
         }
 
         // ==========================================
-        // 9. LOGIKA ROLL DADU & GILIRAN
+        // 9. LOGIKA ROLL DADU, AMBIL ALIH & HOTEL DELTA
         // ==========================================
-        async function rollDiceAction() {
+        async function rollDiceAction(power = 75) {
             if (isRolling || isPawnMoving || !gameState) return;
             const activePlayer = gameState.players[gameState.turnIndex];
             if (gameState.turnPhase !== "roll") return;
 
-            // Jika online dan bukan giliran saya, kirim request aksi jika client
-            if (!isLocalMode && activePlayer.uid !== currentUser.uid) return;
+            // Jika Online dan Client (Bukan Host): Kirim Aksi Roll ke Host
+            if (!isLocalMode && !isHost) {
+                sendActionToHost({ action: 'ROLL', power: power });
+                return;
+            }
 
             isRolling = true;
             document.getElementById("btn-roll-dice").disabled = true;
 
-            // GUNAKAN PENGACAK DADU CRYPTOGRAPHIC ADIL
-            const [d1, d2] = getCryptoRandomDice();
-            const steps = d1 + d2;
+            try {
+                const [d1, d2] = getCryptoRandomDice();
+                const steps = d1 + d2;
+                const pawn = pawnMeshes[activePlayer.uid];
+                const oldPos = activePlayer.position;
 
-            await rollDiceWithAnimation(d1, d2);
+                // Host broadcast animasi dadu ke semua pemain online
+                if (!isLocalMode && isHost) {
+                    broadcastToAllClients({ type: 'DICE_ROLLED', d1, d2, power, playerUid: activePlayer.uid, oldPos: oldPos });
+                }
 
-            const pawn = pawnMeshes[activePlayer.uid];
-            const oldPos = activePlayer.position;
+                await rollDiceWithAnimation(d1, d2, power);
 
-            let newLogs = [`🎲 ${activePlayer.name} mengocok dadu (${d1} + ${d2} = ${steps}).`, ...gameState.logs];
+                let newLogs = [`🎲 ${activePlayer.name} mengocok dadu (${d1} + ${d2} = ${steps}) dengan daya ${power}%.`, ...gameState.logs];
 
-            const finalPos = await movePawnStepByStep(pawn, oldPos, steps, activePlayer);
-            activePlayer.position = finalPos;
+                const finalPos = await movePawnStepByStep(pawn, oldPos, steps, activePlayer);
+                activePlayer.position = finalPos;
 
-            const tile = BOARD_TILES[finalPos];
-            newLogs.unshift(`${activePlayer.avatar} ${activePlayer.name} tiba di ${tile.name} (${tile.sub}).`);
+                const tile = BOARD_TILES[finalPos];
+                newLogs.unshift(`${activePlayer.avatar} ${activePlayer.name} tiba di ${tile.name} (${tile.sub}).`);
 
-            await evaluateTileLanding(activePlayer, tile, newLogs, d1, d2);
-            isRolling = false;
+                await evaluateTileLanding(activePlayer, tile, newLogs, d1, d2);
+            } catch (err) {
+                console.error("Error in rollDiceAction:", err);
+            } finally {
+                isRolling = false;
+            }
         }
 
         async function evaluateTileLanding(player, tile, newLogs, d1, d2) {
@@ -1879,6 +2021,7 @@
                 const prop = gameState.properties[tile.id];
 
                 if (!prop) {
+                    // Wilayah Belum Ada Pemilik
                     if (player.money >= tile.price) {
                         if (player.isBot) {
                             if (player.money - tile.price >= 1000000) {
@@ -1887,39 +2030,132 @@
                             }
                         } else {
                             nextPhase = "action";
-                            openBuyModal(tile);
+                            if (player.uid === currentUser.uid) {
+                                openBuyModal(tile);
+                            } else if (!isLocalMode && isHost) {
+                                broadcastToAllClients({
+                                    type: 'PROMPT_ACTION_MODAL',
+                                    targetUid: player.uid,
+                                    actionType: 'BUY',
+                                    tileId: tile.id
+                                });
+                            }
                         }
                     } else {
                         newLogs.unshift(`Uang ${player.name} tidak cukup membeli ${tile.name}.`);
                     }
                 } else if (prop.ownerUid !== player.uid) {
+                    // Wilayah Milik Pemain Lain -> Bayar Retribusi Sewa
                     const owner = gameState.players.find(p => p.uid === prop.ownerUid);
                     if (owner && !owner.bankrupt) {
-                        const rentAmount = tile.rent * (prop.level || 1);
+                        const isHotel = prop.level === 4;
+                        const rentAmount = isHotel ? tile.rent * 5 : tile.rent * (prop.level || 1);
+
                         player.money -= rentAmount;
                         owner.money += rentAmount;
 
                         sound.playRent();
                         showFloatingMoney(`-Rp ${rentAmount.toLocaleString('id-ID')}`, false);
-                        showEventBanner("RETRIBUSI SEWA DESA!", `${player.name} membayar sewa ${formatRp(rentAmount)} ke ${owner.name}.`, "fa-money-bill-wave");
+                        
+                        if (isHotel) {
+                            showEventBanner("MENGINAP DI HOTEL DELTA!", `${player.name} membayar sewa ${formatRp(rentAmount)} ke ${owner.name}! Wilayah kebal ambil alih.`, "fa-hotel");
+                            newLogs.unshift(`🏨 ${player.name} membayar sewa HOTEL DELTA ${formatRp(rentAmount)} ke ${owner.name} di ${tile.name}.`);
+                        } else {
+                            showEventBanner("RETRIBUSI SEWA DESA!", `${player.name} membayar sewa ${formatRp(rentAmount)} ke ${owner.name}.`, "fa-money-bill-wave");
+                            newLogs.unshift(`💸 ${player.name} membayar sewa ${formatRp(rentAmount)} ke ${owner.name} di ${tile.name}.`);
+                        }
 
-                        newLogs.unshift(`💸 ${player.name} membayar sewa ${formatRp(rentAmount)} ke ${owner.name} di ${tile.name}.`);
-                        if (!player.isBot && player.uid === currentUser.uid) {
-                            showInfoModal(tile, `Wilayah ini milik ${owner.name}. Kamu membayar retribusi sewa ${formatRp(rentAmount)}.`);
+                        // ==========================================
+                        // FITUR 2: AMBIL ALIH ASET MILIK PEMAIN LAIN
+                        // ==========================================
+                        if (!isHotel && tile.type === "property") {
+                            // Biaya Ambil Alih = 1.5x dari total harga awal & bangunan
+                            const takeoverCost = Math.floor(tile.price * prop.level * 1.5);
+
+                            if (player.money >= takeoverCost) {
+                                if (player.isBot) {
+                                    // Bot cerdas ambil alih jika punya cadangan uang tebal
+                                    if (player.money - takeoverCost >= 2000000) {
+                                        await executeTakeoverProperty(tile, takeoverCost, player, newLogs, d1, d2);
+                                        return;
+                                    }
+                                } else {
+                                    nextPhase = "action";
+                                    if (player.uid === currentUser.uid) {
+                                        openTakeoverModal(tile, prop, owner, rentAmount, takeoverCost);
+                                    } else if (!isLocalMode && isHost) {
+                                        broadcastToAllClients({
+                                            type: 'PROMPT_ACTION_MODAL',
+                                            targetUid: player.uid,
+                                            actionType: 'TAKEOVER',
+                                            tileId: tile.id,
+                                            rentPaid: rentAmount,
+                                            takeoverCost: takeoverCost,
+                                            ownerName: owner.name,
+                                            propLevel: prop.level
+                                        });
+                                    }
+                                }
+                            } else {
+                                if (!player.isBot) {
+                                    const msgText = `Wilayah ini milik ${owner.name}. Biaya sewa ${formatRp(rentAmount)} terbayar. (Saldo tidak cukup untuk ambil alih seharga ${formatRp(takeoverCost)}).`;
+                                    if (player.uid === currentUser.uid) {
+                                        showInfoModal(tile, msgText);
+                                    } else if (!isLocalMode && isHost) {
+                                        broadcastToAllClients({
+                                            type: 'SHOW_INFO_MODAL',
+                                            targetUid: player.uid,
+                                            tileId: tile.id,
+                                            message: msgText
+                                        });
+                                    }
+                                }
+                            }
+                        } else {
+                            if (!player.isBot) {
+                                const msgText = `Wilayah ini milik ${owner.name}. Biaya sewa ${formatRp(rentAmount)} terbayar. ${isHotel ? 'Wilayah telah menjadi HOTEL DELTA (Kebal Ambil Alih)!' : ''}`;
+                                if (player.uid === currentUser.uid) {
+                                    showInfoModal(tile, msgText);
+                                } else if (!isLocalMode && isHost) {
+                                    broadcastToAllClients({
+                                        type: 'SHOW_INFO_MODAL',
+                                        targetUid: player.uid,
+                                        tileId: tile.id,
+                                        message: msgText
+                                    });
+                                }
+                            }
                         }
                     }
                 } else {
-                    const upgradeCost = Math.floor(tile.price * 0.6);
+                    // Milik Sendiri -> Bangun / Upgrade Rumah atau Hotel Delta
                     const currentLvl = prop.level || 1;
-                    if (currentLvl < 3 && player.money >= upgradeCost) {
-                        if (player.isBot) {
-                            if (player.money - upgradeCost >= 1500000) {
-                                await executeUpgradeProperty(tile, upgradeCost, player, newLogs, d1, d2);
-                                return;
+                    if (currentLvl < 4) {
+                        const isNextHotel = currentLvl === 3;
+                        const upgradeCost = isNextHotel ? Math.floor(tile.price * 0.9) : Math.floor(tile.price * 0.6);
+
+                        if (player.money >= upgradeCost) {
+                            if (player.isBot) {
+                                if (player.money - upgradeCost >= 1500000) {
+                                    await executeUpgradeProperty(tile, upgradeCost, player, newLogs, d1, d2);
+                                    return;
+                                }
+                            } else {
+                                nextPhase = "action";
+                                if (player.uid === currentUser.uid) {
+                                    openUpgradeModal(tile, currentLvl, upgradeCost, isNextHotel);
+                                } else if (!isLocalMode && isHost) {
+                                    broadcastToAllClients({
+                                        type: 'PROMPT_ACTION_MODAL',
+                                        targetUid: player.uid,
+                                        actionType: 'UPGRADE',
+                                        tileId: tile.id,
+                                        currentLvl: currentLvl,
+                                        upgradeCost: upgradeCost,
+                                        isNextHotel: isNextHotel
+                                    });
+                                }
                             }
-                        } else {
-                            nextPhase = "action";
-                            openUpgradeModal(tile, currentLvl, upgradeCost);
                         }
                     }
                 }
@@ -1928,7 +2164,10 @@
                 sound.playPenalty();
                 showFloatingMoney(`-Rp ${tile.rent.toLocaleString('id-ID')}`, false);
                 newLogs.unshift(`🧾 ${player.name} membayar Pajak Tambak Hasil Bumi ${formatRp(tile.rent)}.`);
-                if (!player.isBot && player.uid === currentUser.uid) showInfoModal(tile, tile.desc);
+                if (!player.isBot) {
+                    if (player.uid === currentUser.uid) showInfoModal(tile, tile.desc);
+                    else if (!isLocalMode && isHost) broadcastToAllClients({ type: 'SHOW_INFO_MODAL', targetUid: player.uid, tileId: tile.id, message: tile.desc });
+                }
             } else if (tile.type === "chance") {
                 const card = CHANCE_CARDS[Math.floor(Math.random() * CHANCE_CARDS.length)];
                 player.money += card.money;
@@ -1940,7 +2179,10 @@
                     showFloatingMoney(`-Rp ${Math.abs(card.money).toLocaleString('id-ID')}`, false);
                 }
                 newLogs.unshift(`🎴 Warta Sidoarjo (${player.name}): ${card.text}`);
-                if (!player.isBot && player.uid === currentUser.uid) showInfoModal(tile, card.text);
+                if (!player.isBot) {
+                    if (player.uid === currentUser.uid) showInfoModal(tile, card.text);
+                    else if (!isLocalMode && isHost) broadcastToAllClients({ type: 'SHOW_INFO_MODAL', targetUid: player.uid, tileId: tile.id, message: card.text });
+                }
             } else if (tile.type === "gotojail") {
                 player.position = 6;
                 player.money -= 500000;
@@ -1950,8 +2192,11 @@
                 newLogs.unshift(`🚧 ${player.name} terjebak macet Bundaran Waru! Dialihkan ke Porong & denda Rp 500.000.`);
                 
                 const targetCoord = tileCoordinates[6];
-                pawnMeshes[player.uid].position.set(targetCoord.x, 0.15, targetCoord.z);
-                if (!player.isBot && player.uid === currentUser.uid) showInfoModal(tile, tile.desc);
+                if (pawnMeshes[player.uid]) pawnMeshes[player.uid].position.set(targetCoord.x, 0.15, targetCoord.z);
+                if (!player.isBot) {
+                    if (player.uid === currentUser.uid) showInfoModal(tile, tile.desc);
+                    else if (!isLocalMode && isHost) broadcastToAllClients({ type: 'SHOW_INFO_MODAL', targetUid: player.uid, tileId: tile.id, message: tile.desc });
+                }
             }
 
             if (player.money < 0) {
@@ -1984,6 +2229,7 @@
             }
         }
 
+        // Eksekusi Beli Properti Awal
         async function executeBuyProperty(tile, player, logs, d1, d2) {
             player.money -= tile.price;
             const props = { ...gameState.properties };
@@ -1998,6 +2244,11 @@
             triggerTerritoryOccupy3DEffect(tile.id, player.colorHex);
             showFloatingMoney(`-Rp ${tile.price.toLocaleString('id-ID')}`, false);
             showEventBanner("WILAYAH DIKUASAI!", `${player.name} resmi membeli ${tile.name}!`, "fa-landmark");
+
+            if (!isLocalMode && isHost) {
+                broadcastToAllClients({ type: 'EFFECT_OCCUPY', tileId: tile.id, colorHex: player.colorHex });
+                broadcastToAllClients({ type: 'BANNER_EVENT', title: 'WILAYAH DIKUASAI!', message: `${player.name} resmi membeli ${tile.name}!`, icon: 'fa-landmark' });
+            }
 
             logs.unshift(`🏰 ${player.name} resmi membeli ${tile.name} seharga ${formatRp(tile.price)}!`);
 
@@ -2014,6 +2265,7 @@
             }
         }
 
+        // Eksekusi Upgrade Properti (Rumah 1-3 -> HOTEL DELTA Level 4)
         async function executeUpgradeProperty(tile, cost, player, logs, d1, d2) {
             player.money -= cost;
             const props = { ...gameState.properties };
@@ -2023,9 +2275,25 @@
             sound.playOccupy();
             triggerTerritoryOccupy3DEffect(tile.id, player.colorHex);
             showFloatingMoney(`-Rp ${cost.toLocaleString('id-ID')}`, false);
-            showEventBanner("PROPERTI DIBANGUN!", `${player.name} membangun ruko Tk.${nextLvl} di ${tile.name}!`, "fa-hotel");
 
-            logs.unshift(`🏗️ ${player.name} membangun ruko Tingkat ${nextLvl} di ${tile.name}!`);
+            const title = nextLvl === 4 ? "HOTEL DELTA MEWAH!" : "PROPERTI DIBANGUN!";
+            const desc = nextLvl === 4 ? 
+                `${player.name} membangun HOTEL DELTA di ${tile.name}! Wilayah kebal ambil alih.` : 
+                `${player.name} membangun ruko Tk.${nextLvl} di ${tile.name}!`;
+            const icon = nextLvl === 4 ? "fa-hotel" : "fa-house";
+
+            showEventBanner(title, desc, icon);
+
+            if (nextLvl === 4) {
+                logs.unshift(`🏨 ${player.name} resmi membangun HOTEL DELTA (Landmark Tertinggi) di ${tile.name}! Wilayah kebal ambil alih.`);
+            } else {
+                logs.unshift(`🏗️ ${player.name} membangun ruko Tingkat ${nextLvl} di ${tile.name}!`);
+            }
+
+            if (!isLocalMode && isHost) {
+                broadcastToAllClients({ type: 'EFFECT_OCCUPY', tileId: tile.id, colorHex: player.colorHex });
+                broadcastToAllClients({ type: 'BANNER_EVENT', title, message: desc, icon });
+            }
 
             await updateGameState({
                 dice: [d1 || 1, d2 || 1],
@@ -2040,9 +2308,70 @@
             }
         }
 
+        // Eksekusi Ambil Alih Wilayah Milik Pemain Lain
+        async function executeTakeoverProperty(tile, takeoverCost, player, logs, d1, d2) {
+            const props = { ...gameState.properties };
+            const prevOwnerUid = props[tile.id].ownerUid;
+            const prevOwner = gameState.players.find(p => p.uid === prevOwnerUid);
+
+            player.money -= takeoverCost;
+            if (prevOwner) {
+                prevOwner.money += takeoverCost;
+            }
+
+            props[tile.id] = {
+                ownerUid: player.uid,
+                colorIndex: player.colorHex,
+                characterId: player.characterId,
+                level: props[tile.id].level || 1
+            };
+
+            sound.playOccupy();
+            triggerTerritoryOccupy3DEffect(tile.id, player.colorHex);
+            showFloatingMoney(`-Rp ${takeoverCost.toLocaleString('id-ID')}`, false);
+            
+            const prevOwnerName = prevOwner ? prevOwner.name : "Pemain Lain";
+            const title = "AMBIL ALIH SUKSES!";
+            const desc = `${player.name} berhasil mengambil alih ${tile.name} dari ${prevOwnerName}!`;
+            const icon = "fa-handshake";
+
+            showEventBanner(title, desc, icon);
+            logs.unshift(`🔥 ${player.name} MENGAMBIL ALIH kepemilikan ${tile.name} dari ${prevOwnerName} seharga ${formatRp(takeoverCost)}!`);
+
+            if (!isLocalMode && isHost) {
+                broadcastToAllClients({ type: 'EFFECT_OCCUPY', tileId: tile.id, colorHex: player.colorHex });
+                broadcastToAllClients({ type: 'BANNER_EVENT', title, message: desc, icon });
+            }
+
+            await updateGameState({
+                dice: [d1 || 1, d2 || 1],
+                players: gameState.players,
+                properties: props,
+                turnPhase: "end",
+                logs: logs.slice(0, 25)
+            });
+
+            if (player.isBot) {
+                setTimeout(() => endTurnAction(), 800);
+            }
+        }
+
+        // =========================================================================
+        // AKHIRI GILIRAN (PERBAIKAN SIKLUS GILIRAN MULTIPLAYER)
+        // =========================================================================
         async function endTurnAction() {
             if (!gameState) return;
             sound.playClick();
+
+            const btnEnd = document.getElementById("btn-end-turn");
+            if (btnEnd) btnEnd.classList.add("hidden");
+
+            // Jika Online dan Client (Bukan Host): Kirim Aksi Akhiri Giliran ke Host
+            if (!isLocalMode && !isHost) {
+                sendActionToHost({ action: 'END_TURN' });
+                return;
+            }
+
             const total = gameState.players.length;
             let nextIdx = (gameState.turnIndex + 1) % total;
             
@@ -2052,6 +2381,7 @@
                 loopGuard++;
             }
 
+            // Update giliran baru dan kembalikan turnPhase ke "roll"
             await updateGameState({
                 turnIndex: nextIdx,
                 turnPhase: "roll"
@@ -2063,7 +2393,7 @@
             const activePlayer = gameState.players[gameState.turnIndex];
             if (activePlayer && activePlayer.isBot && gameState.turnPhase === "roll") {
                 setTimeout(() => {
-                    rollDiceAction();
+                    rollDiceAction(75);
                 }, 1000);
             }
         }
@@ -2138,13 +2468,14 @@
                     btnEnd.classList.add("hidden");
                 }
             } else {
-                turnText.innerText = `Menunggu giliran ${activePlayer.name}...`;
+                turnText.innerText = gameState.turnPhase === "action"
+                    ? `Menunggu keputusan ${activePlayer.name}...`
+                    : `Menunggu giliran ${activePlayer.name}...`;
                 btnRoll.disabled = true;
                 btnEnd.classList.add("hidden");
             }
         }
 
-        // Rincian Modal Dompet Indonesia
         function openWalletModal() {
             sound.playClick();
             const myPlayer = (gameState && gameState.players.find(p => p.uid === currentUser.uid)) || (gameState && gameState.players[0]) || { money: 15000000, name: "Pemain" };
@@ -2180,16 +2511,18 @@
                         const tile = BOARD_TILES[tileId];
                         const propData = gameState.properties[tileId];
                         const level = propData.level || 1;
-                        const curRent = tile.rent * level;
-                        propertyValue += tile.price * level;
+                        const isHotel = level === 4;
+                        const curRent = isHotel ? tile.rent * 5 : tile.rent * level;
+                        const assetVal = isHotel ? tile.price * 3.5 : tile.price * level;
+                        propertyValue += assetVal;
 
                         propListEl.innerHTML += `
-                            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-2 flex items-center justify-between">
+                            <div class="bg-slate-950/80 border ${isHotel ? 'border-amber-400/80' : 'border-slate-800'} rounded-xl p-2 flex items-center justify-between">
                                 <div class="flex items-center gap-2">
                                     <span class="w-3 h-3 rounded-full" style="background-color: ${tile.color}"></span>
                                     <div>
                                         <div class="text-xs font-bold text-white">${tile.name}</div>
-                                        <div class="text-[9px] text-slate-400">${tile.sub} • Tk. ${level}</div>
+                                        <div class="text-[9px] text-slate-400">${tile.sub} • ${isHotel ? '<span class="text-amber-400 font-bold">HOTEL DELTA</span>' : `Tk. ${level}`}</div>
                                     </div>
                                 </div>
                                 <div class="text-right">
@@ -2206,7 +2539,7 @@
         }
 
         // ==========================================
-        // 11. MODAL AKSI BELI / UPGRADE
+        // 11. MODAL AKSI BELI / UPGRADE / AMBIL ALIH
         // ==========================================
         function openBuyModal(tile) {
             const modal = document.getElementById("action-modal");
@@ -2216,6 +2549,7 @@
             document.getElementById("modal-tile-desc").innerText = "Wilayah ini belum memiliki pemilik. Ambil kesempatan untuk menguasainya!";
             
             document.getElementById("modal-price-box").classList.remove("hidden");
+            document.getElementById("modal-price-title").innerText = "Harga Beli";
             document.getElementById("modal-buy-price").innerText = formatRp(tile.price);
             document.getElementById("modal-rent-price").innerText = formatRp(tile.rent);
 
@@ -2223,37 +2557,95 @@
             document.getElementById("btn-modal-ok").classList.add("hidden");
             
             const btnBuy = document.getElementById("btn-modal-buy");
+            btnBuy.className = "w-1/2 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-lg transition";
             btnBuy.innerText = "Beli Wilayah";
             btnBuy.onclick = () => {
                 modal.classList.add("hidden");
-                const activePlayer = gameState.players[gameState.turnIndex];
-                executeBuyProperty(tile, activePlayer, gameState.logs);
+                if (isHost || isLocalMode) {
+                    const activePlayer = gameState.players[gameState.turnIndex];
+                    executeBuyProperty(tile, activePlayer, gameState.logs);
+                } else {
+                    sendActionToHost({ action: 'BUY', tileId: tile.id });
+                }
             };
 
             modal.classList.remove("hidden");
         }
 
-        function openUpgradeModal(tile, currentLvl, upgradeCost) {
+        function openUpgradeModal(tile, currentLvl, upgradeCost, isNextHotel = false) {
             const modal = document.getElementById("action-modal");
             document.getElementById("modal-header-color").style.backgroundColor = tile.color;
-            document.getElementById("modal-tile-type").innerText = `WILAYAH MILIKMU (TK. ${currentLvl})`;
-            document.getElementById("modal-tile-name").innerText = tile.name;
-            document.getElementById("modal-tile-desc").innerText = `Bangun ruko/gedung modern di ${tile.name} untuk melipatgandakan sewa!`;
             
-            document.getElementById("modal-price-box").classList.remove("hidden");
-            document.getElementById("modal-buy-price").innerText = formatRp(upgradeCost);
-            document.getElementById("modal-rent-price").innerText = formatRp(tile.rent * (currentLvl + 1));
+            if (isNextHotel) {
+                document.getElementById("modal-tile-type").innerText = "PELUANG LANDMARK KABUPATEN";
+                document.getElementById("modal-tile-name").innerText = `🏨 HOTEL DELTA (${tile.name})`;
+                document.getElementById("modal-tile-desc").innerText = "Tingkatkan ruko menjadi HOTEL DELTA MEWAH! Tarif sewa berlipat 5x dan wilayah ini KEBAL terhadap ambil alih selamanya!";
+                document.getElementById("modal-price-title").innerText = "Biaya Bangun Hotel";
+                document.getElementById("modal-buy-price").innerText = formatRp(upgradeCost);
+                document.getElementById("modal-rent-price").innerText = formatRp(tile.rent * 5);
+            } else {
+                document.getElementById("modal-tile-type").innerText = `WILAYAH MILIKMU (TK. ${currentLvl})`;
+                document.getElementById("modal-tile-name").innerText = tile.name;
+                document.getElementById("modal-tile-desc").innerText = `Bangun ruko/gedung modern di ${tile.name} untuk melipatgandakan sewa!`;
+                document.getElementById("modal-price-title").innerText = "Biaya Bangun";
+                document.getElementById("modal-buy-price").innerText = formatRp(upgradeCost);
+                document.getElementById("modal-rent-price").innerText = formatRp(tile.rent * (currentLvl + 1));
+            }
 
+            document.getElementById("modal-price-box").classList.remove("hidden");
             document.getElementById("modal-buttons").classList.remove("hidden");
             document.getElementById("btn-modal-ok").classList.add("hidden");
             
             const btnBuy = document.getElementById("btn-modal-buy");
-            btnBuy.innerText = "Bangun (+1 Lvl)";
+            btnBuy.className = isNextHotel ? 
+                "w-1/2 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold text-xs shadow-lg transition" :
+                "w-1/2 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-lg transition";
+            
+            btnBuy.innerText = isNextHotel ? "🏨 Bangun Hotel" : "Bangun (+1 Lvl)";
             btnBuy.onclick = () => {
                 modal.classList.add("hidden");
-                const activePlayer = gameState.players[gameState.turnIndex];
-                executeUpgradeProperty(tile, upgradeCost, activePlayer, gameState.logs);
+                if (isHost || isLocalMode) {
+                    const activePlayer = gameState.players[gameState.turnIndex];
+                    executeUpgradeProperty(tile, upgradeCost, activePlayer, gameState.logs);
+                } else {
+                    sendActionToHost({ action: 'UPGRADE', tileId: tile.id, cost: upgradeCost });
+                }
             };
+
+            modal.classList.remove("hidden");
+        }
+
+        // Modal Ambil Alih Wilayah Milik Lawan
+        function openTakeoverModal(tile, prop, owner, rentPaid, takeoverCost) {
+            const modal = document.getElementById("action-modal");
+            document.getElementById("modal-header-color").style.backgroundColor = tile.color;
+            document.getElementById("modal-tile-type").innerText = `PELUANG AKUISISI • MILIK ${owner.name.toUpperCase()}`;
+            document.getElementById("modal-tile-name").innerText = `${tile.name} (Tk. ${prop.level})`;
+            document.getElementById("modal-tile-desc").innerText = `Kamu telah membayar sewa ${formatRp(rentPaid)}. Apakah kamu ingin MENGAMBIL ALIH wilayah ini seharga ${formatRp(takeoverCost)}? Dana akan diserahkan ke ${owner.name}.`;
+
+            document.getElementById("modal-price-box").classList.remove("hidden");
+            document.getElementById("modal-price-title").innerText = "Biaya Ambil Alih";
+            document.getElementById("modal-buy-price").innerText = formatRp(takeoverCost);
+            document.getElementById("modal-rent-price").innerText = formatRp(tile.rent * (prop.level || 1));
+
+            document.getElementById("modal-buttons").classList.remove("hidden");
+            document.getElementById("btn-modal-ok").classList.add("hidden");
+
+            const btnBuy = document.getElementById("btn-modal-buy");
+            btnBuy.className = "w-1/2 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-orange-600 hover:from-rose-500 hover:to-orange-500 text-white font-black text-xs shadow-lg transition flex items-center justify-center gap-1";
+            btnBuy.innerHTML = `<i class="fa-solid fa-fire"></i> Ambil Alih`;
+            btnBuy.onclick = () => {
+                modal.classList.add("hidden");
+                if (isHost || isLocalMode) {
+                    const activePlayer = gameState.players[gameState.turnIndex];
+                    executeTakeoverProperty(tile, takeoverCost, activePlayer, gameState.logs);
+                } else {
+                    sendActionToHost({ action: 'TAKEOVER', tileId: tile.id, cost: takeoverCost });
+                }
+            };
+
+            const btnSkip = document.getElementById("btn-modal-skip");
+            btnSkip.innerText = "Lewati";
 
             modal.classList.remove("hidden");
         }
@@ -2273,7 +2665,7 @@
         }
 
         // ==========================================
-        // 12. ENGINE GRAFIS 3D THREE.JS (RESPONSIF MOBILE)
+        // 12. ENGINE GRAFIS 3D THREE.JS (DENGAN HOTEL 3D)
         // ==========================================
         let scene, camera, renderer;
         let boardGroup, pawnsGroup, buildingsGroup;
@@ -2532,23 +2924,49 @@
             return group;
         }
 
+        // ==========================================
+        // BANGUNAN 3D: RUMAH TINGKAT 1..3 & HOTEL DELTA TINGKAT 4
+        // ==========================================
         function createBuilding3D(colorInt, level) {
             const group = new THREE.Group();
-            const mat = new THREE.MeshStandardMaterial({ color: colorInt, roughness: 0.4 });
+            const mat = new THREE.MeshStandardMaterial({ color: colorInt, roughness: 0.35, metalness: 0.2 });
             const roofMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+            const goldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.8, roughness: 0.2 });
 
-            for (let i = 0; i < level; i++) {
-                const height = level === 3 ? 0.85 : 0.45;
-                const house = new THREE.Mesh(new THREE.BoxGeometry(0.45, height, 0.45), mat);
-                house.position.set((i - (level - 1) / 2) * 0.52, height / 2 + 0.15, 0);
-                house.castShadow = true;
+            if (level === 4) {
+                // HOTEL DELTA MEWAH (Landmark Tertinggi & Kebal Ambil Alih)
+                const base = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.25, 1.2), mat);
+                base.position.y = 0.125;
+                base.castShadow = true;
 
-                const roof = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.3, 4), roofMat);
-                roof.position.set(house.position.x, height + 0.3, 0);
+                const tower = new THREE.Mesh(new THREE.BoxGeometry(0.85, 1.35, 0.85), mat);
+                tower.position.y = 0.8;
+                tower.castShadow = true;
+
+                const roof = new THREE.Mesh(new THREE.ConeGeometry(0.65, 0.5, 4), goldMat);
+                roof.position.y = 1.7;
                 roof.rotation.y = Math.PI / 4;
                 roof.castShadow = true;
 
-                group.add(house, roof);
+                const signGeo = new THREE.BoxGeometry(0.25, 0.25, 0.08);
+                const sign = new THREE.Mesh(signGeo, goldMat);
+                sign.position.set(0, 1.05, 0.45);
+                group.add(base, tower, roof, sign);
+            } else {
+                // Rumah / Ruko Tingkat 1, 2, 3
+                for (let i = 0; i < level; i++) {
+                    const height = 0.45;
+                    const house = new THREE.Mesh(new THREE.BoxGeometry(0.42, height, 0.42), mat);
+                    house.position.set((i - (level - 1) / 2) * 0.48, height / 2 + 0.15, 0);
+                    house.castShadow = true;
+
+                    const roof = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.28, 4), roofMat);
+                    roof.position.set(house.position.x, height + 0.28, 0);
+                    roof.rotation.y = Math.PI / 4;
+                    roof.castShadow = true;
+
+                    group.add(house, roof);
+                }
             }
             return group;
         }
@@ -2577,7 +2995,7 @@
             Object.keys(gameState.properties).forEach((tileIdStr) => {
                 const tileId = parseInt(tileIdStr);
                 const prop = gameState.properties[tileId];
-                const key = `${tileId}_${prop.level}`;
+                const key = `${tileId}_${prop.level}_${prop.ownerUid}`;
 
                 if (!buildingMeshes[key]) {
                     Object.keys(buildingMeshes).forEach(k => {
@@ -2598,7 +3016,6 @@
             });
         }
 
-        // Kontrol Orbit Kamera & Touch Pinch/Zoom
         function setupCameraControls(domElement) {
             domElement.addEventListener("mousedown", (e) => {
                 isDragging = true;
@@ -2620,7 +3037,6 @@
                 updateCameraPosition();
             }, { passive: true });
 
-            // Touch Drag (1 Jari) & Pinch Zoom (2 Jari) di Ponsel
             domElement.addEventListener("touchstart", (e) => {
                 if (e.touches.length === 1) {
                     isDragging = true;
@@ -2686,7 +3102,7 @@
         }
 
         // ==========================================
-        // 13. EVENT LISTENERS & PWA REGISTRATION
+        // 13. EVENT LISTENERS & PUSH-HOLD PROGRESS BAR
         // ==========================================
         document.getElementById("btn-start-local-game").addEventListener("click", startLocalGame);
         document.getElementById("btn-create-room").addEventListener("click", createOnlineRoom);
@@ -2694,7 +3110,6 @@
         document.getElementById("btn-start-online-game").addEventListener("click", startOnlineGame);
         document.getElementById("btn-leave-room").addEventListener("click", leaveRoomUI);
 
-        // Share via WhatsApp & Salin Link Room
         document.getElementById("btn-copy-code").addEventListener("click", () => {
             const url = `https://monopolisidoarjo.pages.dev/?room=${gameState.roomCode}`;
             navigator.clipboard.writeText(url).then(() => {
@@ -2715,7 +3130,6 @@
             }
         });
 
-        // Jumlah Bot
         document.querySelectorAll(".btn-player-count").forEach(btn => {
             btn.addEventListener("click", () => {
                 sound.playClick();
@@ -2729,7 +3143,6 @@
             });
         });
 
-        // Toggle BGM Musik
         const btnToggleMusic = document.getElementById("btn-toggle-music");
         const musicIcon = document.getElementById("music-icon");
         function updateMusicUI() {
@@ -2746,7 +3159,6 @@
         });
         updateMusicUI();
 
-        // Toggle SFX Suara
         const btnToggleSound = document.getElementById("btn-toggle-sound");
         const soundIcon = document.getElementById("sound-icon");
         function updateSoundUI() {
@@ -2764,7 +3176,6 @@
         });
         updateSoundUI();
 
-        // Tombol Kamera Switch (3D Isometric vs 2D Top-Down)
         let isTopDownView = false;
         document.getElementById("btn-cam-view").addEventListener("click", () => {
             sound.playClick();
@@ -2781,13 +3192,11 @@
             updateCameraPosition();
         });
 
-        // Tombol Dompet & Brankas
         document.getElementById("btn-open-wallet").addEventListener("click", openWalletModal);
         document.getElementById("btn-close-wallet").addEventListener("click", () => {
             document.getElementById("wallet-modal").classList.add("hidden");
         });
 
-        // Tombol Buka Panel Kartu Desa di HP
         document.getElementById("btn-toggle-outer-cards").addEventListener("click", () => {
             sound.playClick();
             document.getElementById("mobile-cards-modal").classList.remove("hidden");
@@ -2796,22 +3205,88 @@
             document.getElementById("mobile-cards-modal").classList.add("hidden");
         });
 
-        // PUSH BUTTON DADU & KLIK DADU
-        document.getElementById("btn-roll-dice").addEventListener("click", rollDiceAction);
+        // ==========================================
+        // PUSH BUTTON DADU: HOLD-TO-CHARGE PROGRESS BAR
+        // ==========================================
+        const btnRoll = document.getElementById("btn-roll-dice");
+
+        function startChargingDice(e) {
+            if (e && e.cancelable) e.preventDefault();
+            if (isRolling || isPawnMoving || !gameState) return;
+            const activePlayer = gameState.players[gameState.turnIndex];
+            if (gameState.turnPhase !== "roll") return;
+            if (!isLocalMode && activePlayer.uid !== currentUser.uid) return;
+
+            isHoldingDice = true;
+            holdStartTime = performance.now();
+            chargeProgress = 0;
+            updateChargeUI(0);
+            btnRoll.classList.add("pushed");
+            sound.playChargeStart();
+
+            if (holdTimer) cancelAnimationFrame(holdTimer);
+
+            function chargeFrame(now) {
+                if (!isHoldingDice) return;
+                const elapsed = now - holdStartTime;
+                chargeProgress = Math.min(100, Math.floor((elapsed / 1100) * 100));
+                updateChargeUI(chargeProgress);
+
+                if (chargeProgress === 50 && navigator.vibrate) navigator.vibrate(20);
+                if (chargeProgress === 100 && navigator.vibrate) navigator.vibrate([30, 20, 40]);
+
+                if (chargeProgress < 100) {
+                    holdTimer = requestAnimationFrame(chargeFrame);
+                } else {
+                    releaseAndRollDice();
+                }
+            }
+            holdTimer = requestAnimationFrame(chargeFrame);
+        }
+
+        function releaseAndRollDice(e) {
+            if (e && e.cancelable) e.preventDefault();
+            if (!isHoldingDice) return;
+            isHoldingDice = false;
+            if (holdTimer) cancelAnimationFrame(holdTimer);
+
+            const finalPower = Math.max(30, chargeProgress);
+            sound.playChargeRelease();
+            updateChargeUI(finalPower, true);
+
+            rollDiceAction(finalPower);
+        }
+
+        // Event Listeners untuk Button Push & Touch Hold
+        btnRoll.addEventListener("mousedown", startChargingDice);
+        btnRoll.addEventListener("mouseup", releaseAndRollDice);
+        btnRoll.addEventListener("mouseleave", () => {
+            if (isHoldingDice) releaseAndRollDice();
+        });
+
+        btnRoll.addEventListener("touchstart", startChargingDice, { passive: false });
+        btnRoll.addEventListener("touchend", releaseAndRollDice, { passive: false });
+        btnRoll.addEventListener("touchcancel", releaseAndRollDice, { passive: false });
+
+        // Klik Dadu 3D Langsung di Baki
         document.getElementById("dice-click-1").addEventListener("click", () => {
-            const btn = document.getElementById("btn-roll-dice");
-            if (!btn.disabled) rollDiceAction();
+            if (!btnRoll.disabled) rollDiceAction(75);
         });
         document.getElementById("dice-click-2").addEventListener("click", () => {
-            const btn = document.getElementById("btn-roll-dice");
-            if (!btn.disabled) rollDiceAction();
+            if (!btnRoll.disabled) rollDiceAction(75);
         });
 
+        // Tombol Akhiri Giliran
         document.getElementById("btn-end-turn").addEventListener("click", endTurnAction);
 
+        // Modal Action Handlers
         document.getElementById("btn-modal-skip").addEventListener("click", () => {
             document.getElementById("action-modal").classList.add("hidden");
-            updateGameState({ turnPhase: "end" });
+            if (isHost || isLocalMode) {
+                updateGameState({ turnPhase: "end" });
+            } else {
+                sendActionToHost({ action: 'SKIP_ACTION' });
+            }
         });
         document.getElementById("btn-modal-ok").addEventListener("click", () => {
             document.getElementById("action-modal").classList.add("hidden");
@@ -2825,7 +3300,7 @@
             document.getElementById("log-panel").classList.add("hidden");
         });
 
-        // PWA Install Event Handler
+        // PWA Install Event
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
@@ -2849,7 +3324,6 @@
             });
         }
 
-        // Cek URL Query Room Param (?room=XXXXX)
         function checkURLRoomParam() {
             const urlParams = new URLSearchParams(window.location.search);
             const roomParam = urlParams.get('room');
@@ -2859,7 +3333,6 @@
             }
         }
 
-        // PWA Service Worker Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js').then((reg) => {
@@ -2870,14 +3343,12 @@
             });
         }
 
-        // Inisialisasi saat Halaman Dimuat
         window.onload = () => {
             renderCharacterSelector();
             init3D();
             initPeerJS();
             checkURLRoomParam();
             
-            // Audio Web Audio Context resume pada interaksi pertama
             const resumeAudio = () => {
                 sound.init();
                 window.removeEventListener('click', resumeAudio);
